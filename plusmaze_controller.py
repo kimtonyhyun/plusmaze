@@ -15,7 +15,11 @@ class PlusMazeController(wx.Frame):
         # Set up GUI
         self._initialize_menu()
         self._initialize_buttons()
-        self.status = self.CreateStatusBar()
+        self.CreateStatusBar()
+        self.StatusBar.SetFieldsCount(2)
+        self.StatusBar.SetStatusWidths([-3, -1]) # Relative widths 3:1
+        self.SetStatusText('hello',0)
+        self.SetStatusText('bye',1)
 
         # Start polling of maze
         self.mon_timer = wx.Timer(self)
@@ -126,7 +130,13 @@ class PlusMazeController(wx.Frame):
         print "Poll"
 
     def actuate_gate(self, e):
-        pass
+        eo = e.EventObject
+        gate = eo.GetLabel()
+        closed = eo.GetValue()
+        if closed:
+            eo.SetBackgroundColour(wx.Colour(255,0,0))
+        else:
+            eo.SetBackgroundColour(wx.Colour(0,255,0))
 
     def dose(self, e):
         pass
