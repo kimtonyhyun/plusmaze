@@ -4,6 +4,8 @@ from plusmaze import PlusMaze
 
 class PlusMazeController(wx.Frame):
 
+    POLL_PERIOD = 250 # ms
+
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(275,3*120),
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
@@ -13,6 +15,12 @@ class PlusMazeController(wx.Frame):
         # Set up GUI
         self._initialize_menu()
         self._initialize_buttons()
+        self.status = self.CreateStatusBar()
+
+        # Start polling of maze
+        self.mon_timer = wx.Timer(self)
+        self.mon_timer.Start(PlusMazeController.POLL_PERIOD)
+        self.Bind(wx.EVT_TIMER, self.monitor, self.mon_timer)
 
         self.Show(True)
 
@@ -113,6 +121,9 @@ class PlusMazeController(wx.Frame):
         gs.Add(rotate_gs, 0, wx.EXPAND | wx.ALL, border=5)
 
         self.SetSizer(gs)
+
+    def monitor(self, e):
+        print "Poll"
 
     def actuate_gate(self, e):
         pass
