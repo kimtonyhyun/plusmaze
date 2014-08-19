@@ -1,6 +1,6 @@
 import wx
 
-from plusmaze import PlusMaze
+from plusmaze import PlusMaze, DeviceError
 
 class PlusMazeController(wx.Frame):
 
@@ -10,7 +10,12 @@ class PlusMazeController(wx.Frame):
         wx.Frame.__init__(self, parent, title=title, size=(275,3*120),
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
 
-        self.pm = PlusMaze()
+        try:
+            self.maze = PlusMaze()
+        except DeviceError:
+            wx.MessageBox('Error initializing the FPGA.\nSee console for detailed information.',
+                          'PlusMazeController', wx.OK | wx.ICON_ERROR)
+            self.Close()
 
         # Set up GUI
         self._initialize_menu()
