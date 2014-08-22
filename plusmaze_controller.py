@@ -132,7 +132,7 @@ class PlusMazeController(wx.Frame):
         self.SetSizer(gs)
 
     def monitor(self, e):
-        print "Poll"
+        pass
 
     def actuate_gate(self, e):
         eo = e.EventObject
@@ -142,12 +142,15 @@ class PlusMazeController(wx.Frame):
             eo.SetBackgroundColour(wx.Colour(255,0,0))
         else:
             eo.SetBackgroundColour(wx.Colour(0,255,0))
+        self.maze.actuate_gate(gate, closed)
 
     def dose(self, e):
-        pass
+        d = e.EventObject.GetLabel() # Direction, e.g. "west"
+        self.maze.dose(d)
 
     def rotate(self, e):
-        pass
+        rot = e.EventObject.GetLabel()
+        self.maze.rotate(rot)
     
     def run_trials(self, e):
         pass

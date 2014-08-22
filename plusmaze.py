@@ -17,7 +17,7 @@ class PlusMaze(object):
     # HARDWARE SETTINGS
     #------------------------------------------------------------
     gate_settings = {'north': GateSetting(epaddr=0x03, cl=550, op=1200),
-                     'south': GateSetting(epaddr=0x00, cl=575, op=1200),
+                     'south': GateSetting(epaddr=0x00, cl=585, op=1200),
                      'east' : GateSetting(epaddr=0x01, cl=565, op=1200),
                      'west' : GateSetting(epaddr=0x02, cl=540, op=1200)}
 
@@ -31,7 +31,10 @@ class PlusMaze(object):
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,
-                                      'center cw' : 6}
+                                      'center cw' : 6,
+                                      'maze ccw': 15,  # Unimplemented
+                                      'maze cw' : 15, # Unimplemented
+                                     }
                         }
 
     prox_settings = {'LASTDETECT_EPADDR': 0x20,
@@ -103,3 +106,19 @@ class PlusMaze(object):
         last_detected_id = self.xem.GetWireOutValue(PlusMaze.prox_settings['LASTDETECT_EPADDR'])
         last_detected_name = PlusMaze.prox_settings['names'][last_detected_id]
         return last_detected_name
+
+    def actuate_gate(self, gate, closed):
+        val = PlusMaze.gate_settings[gate].cl if closed else PlusMaze.gate_settings[gate].op
+        self.xem.SetWireInValue(PlusMaze.gate_settings[gate].epaddr, val)
+        self.xem.UpdateWireIns()
+        print_msg("{} gate {}".format(gate, "closed" if closed else "opened"))
+
+    def dose(self, d):
+        self.xem.ActivateTriggerIn(PlusMaze.dose_settings['TRIG_EPADDR'],
+                                   PlusMaze.dose_settings[d].trig_bit)
+        print_msg("Dosed {}".format(d))
+
+    def rotate(self, r):
+        self.xem.ActivateTriggerIn(PlusMaze.rotation_settings['TRIG_EPADDR'],
+                                   PlusMaze.rotation_settings['trig_map'][r])
+        print_msg("Rotating {}".format(r))
