@@ -10,8 +10,6 @@ class PlusMazeController(wx.Frame):
     User interface for the plus maze
     '''
 
-    POLL_PERIOD = 250 # ms
-
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(275,3*120),
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
@@ -146,7 +144,7 @@ class PlusMazeController(wx.Frame):
 
     def start_default_polling(self):
         print_msg("Start default maze polling")
-        self.poll_timer.Start()
+        self.poll_timer.Start(PlusMaze.POLL_PERIOD)
 
 
     def stop_default_polling(self):
@@ -220,6 +218,7 @@ class PlusMazeController(wx.Frame):
                                             block_pos=self.prev_pos,
                                             parent=None, title='Run trials ({})'.format(trial_file))
             runtrials_dlg.ShowModal()
+            self.last_pos = runtrials_dlg.block_pos # Retrieve final position of block
             runtrials_dlg.Destroy()
 
         self.start_default_polling()

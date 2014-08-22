@@ -17,6 +17,7 @@ class PlusMaze(object):
     ordered_dirs = ['west', 'north', 'south', 'east']
 
     BITFILE = 'toplevel.bit'
+    POLL_PERIOD = 250 # ms
 
     # HARDWARE SETTINGS
     #------------------------------------------------------------
