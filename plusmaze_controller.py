@@ -1,9 +1,14 @@
+import os
 import wx
 
 from plusmaze import PlusMaze, DeviceError
+from runtrials import RunTrialsDialog
 from util import *
 
 class PlusMazeController(wx.Frame):
+    '''
+    User interface for the plus maze
+    '''
 
     POLL_PERIOD = 250 # ms
 
@@ -31,9 +36,9 @@ class PlusMazeController(wx.Frame):
         self.StatusBar.SetStatusText(self.prev_pos, 1)
 
         # Start polling of maze
-        self.mon_timer = wx.Timer(self)
-        self.mon_timer.Start(PlusMazeController.POLL_PERIOD)
-        self.Bind(wx.EVT_TIMER, self.monitor, self.mon_timer)
+        self.poll_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.default_polling , self.poll_timer)
+        self.start_default_polling()
 
         self.Show(True)
 
@@ -62,11 +67,11 @@ class PlusMazeController(wx.Frame):
                                                    kind=wx.ITEM_RADIO)
         self.reward_right_turns = reward_menu.Append(wx.ID_ANY,
                                                      'Reward right turns',
-                                                     'Reward right turns',
+                                                     'Reward right turns only',
                                                      kind=wx.ITEM_RADIO)
         self.reward_left_turns  = reward_menu.Append(wx.ID_ANY,
                                                      'Reward left turns',
-                                                     'Reward left turns',
+                                                     'Reward left turns only',
                                                      kind=wx.ITEM_RADIO)
         maze_menu.AppendMenu(wx.ID_ANY, '&Autoreward', reward_menu)
         maze_menu.AppendSeparator()
@@ -75,10 +80,11 @@ class PlusMazeController(wx.Frame):
         menubar.Append(maze_menu, '&Maze')
 
         # Trial options
-        trial_menu = wx.Menu()
-        trial_menu.Append(wx.ID_OPEN, 'Select trial file...', 'Select trial file')
-        self.Bind(wx.EVT_MENU, self.run_trials, id=wx.ID_OPEN)
-        menubar.Append(trial_menu, '&Trials')
+        expt_menu = wx.Menu()
+        expt_menu.Append(wx.ID_OPEN, 'Semi-auto trials...',
+                                      'Semi-auto trials: Mouse needs to be handled between trials')
+        self.Bind(wx.EVT_MENU, self.run_semiauto_trials, id=wx.ID_OPEN)
+        menubar.Append(expt_menu, '&Experiment')
 
         self.SetMenuBar(menubar)
 
@@ -138,7 +144,17 @@ class PlusMazeController(wx.Frame):
         self.SetSizer(gs)
 
 
-    def monitor(self, e):
+    def start_default_polling(self):
+        print_msg("Start default maze polling")
+        self.poll_timer.Start()
+
+
+    def stop_default_polling(self):
+        self.poll_timer.Stop()
+        print_msg("Stopped default maze polling")
+
+
+    def default_polling(self, e):
         pos = self.maze.get_last_detected_pos()
         if (self.prev_pos != pos):
             print "*"
@@ -192,8 +208,21 @@ class PlusMazeController(wx.Frame):
         self.maze.rotate(rot)
 
 
-    def run_trials(self, e):
-        pass
+    def run_semiauto_trials(self, e):
+        self.stop_default_polling()
+
+        # Select source file and run trials
+        dlg = wx.FileDialog(self, "Choose trial file", '', '', '*.txt', wx.FD_OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            trial_file = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
+            runtrials_dlg = RunTrialsDialog(trial_file=trial_file,
+                                            maze=self.maze,
+                                            block_pos=self.prev_pos,
+                                            parent=None, title='Run trials ({})'.format(trial_file))
+            runtrials_dlg.ShowModal()
+            runtrials_dlg.Destroy()
+
+        self.start_default_polling()
 
 
     def on_exit(self, e):

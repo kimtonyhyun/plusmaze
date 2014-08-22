@@ -10,6 +10,10 @@ class DeviceError(Exception):
     pass
 
 class PlusMaze(object):
+    '''
+    Represents the physical plus maze hardware
+    '''
+
     ordered_dirs = ['west', 'north', 'south', 'east']
 
     BITFILE = 'toplevel.bit'
@@ -32,7 +36,7 @@ class PlusMaze(object):
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,
                                       'center cw' : 6,
-                                      'maze ccw': 15,  # Unimplemented
+                                      'maze ccw': 15, # Unimplemented
                                       'maze cw' : 15, # Unimplemented
                                      }
                         }
