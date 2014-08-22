@@ -5,6 +5,9 @@ from plusmaze import PlusMaze, DeviceError
 from runtrials import RunTrialsDialog
 from util import *
 
+ID_EXPT_SEMIAUTO = wx.NewId()
+ID_EXPT_EGOTRAIN = wx.NewId()
+
 class PlusMazeController(wx.Frame):
     '''
     User interface for the plus maze
@@ -79,9 +82,11 @@ class PlusMazeController(wx.Frame):
 
         # Trial options
         expt_menu = wx.Menu()
-        expt_menu.Append(wx.ID_OPEN, 'Semi-auto trials...',
-                                      'Semi-auto trials: Mouse needs to be handled between trials')
-        self.Bind(wx.EVT_MENU, self.run_semiauto_trials, id=wx.ID_OPEN)
+
+        expt_menu.Append(ID_EXPT_EGOTRAIN, 'Continuous egocentric training', '')
+        expt_menu.Append(ID_EXPT_SEMIAUTO, 'Semi-auto trials...', '')
+        self.Bind(wx.EVT_MENU, self.run_semiauto_trials, id=ID_EXPT_SEMIAUTO)
+
         menubar.Append(expt_menu, '&Experiment')
 
         self.SetMenuBar(menubar)
