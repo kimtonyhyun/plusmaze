@@ -1,6 +1,7 @@
 import wx
 
 from plusmaze import PlusMaze, DeviceError
+from util import *
 
 class PlusMazeController(wx.Frame):
 
@@ -23,8 +24,11 @@ class PlusMazeController(wx.Frame):
         self.CreateStatusBar()
         self.StatusBar.SetFieldsCount(2)
         self.StatusBar.SetStatusWidths([-3, -1]) # Relative widths 3:1
-        self.SetStatusText('hello',0)
-        self.SetStatusText('bye',1)
+
+        # Sample initial location of mouse (may be garbage)
+        self.prev_pos = self.maze.get_last_detected_pos()
+        print_msg("Initial detected position: {}".format(self.prev_pos))
+        self.StatusBar.SetStatusText(self.prev_pos, 1)
 
         # Start polling of maze
         self.mon_timer = wx.Timer(self)
@@ -32,6 +36,7 @@ class PlusMazeController(wx.Frame):
         self.Bind(wx.EVT_TIMER, self.monitor, self.mon_timer)
 
         self.Show(True)
+
 
     def _initialize_menu(self):
         menubar = wx.MenuBar()
@@ -76,6 +81,7 @@ class PlusMazeController(wx.Frame):
         menubar.Append(trial_menu, '&Trials')
 
         self.SetMenuBar(menubar)
+
 
     def _initialize_buttons(self):
         gs = wx.GridSizer(3,1)
@@ -131,8 +137,39 @@ class PlusMazeController(wx.Frame):
 
         self.SetSizer(gs)
 
+
     def monitor(self, e):
-        pass
+        pos = self.maze.get_last_detected_pos()
+        if (self.prev_pos != pos):
+            print "*"
+            print_msg("Detected mouse at {}".format(pos))
+
+            try:
+                turn = PlusMaze.pos_to_turn[(self.prev_pos, pos)]
+                print_msg("Mouse executed {} turn".format(turn))
+
+                # Autoreward
+                if self.reward_enable.IsChecked():
+                    if self.reward_every_arm.IsChecked():
+                        print_msg("Autoreward (every arm)")
+                        self.maze.dose(pos)
+                    elif (self.reward_right_turns.IsChecked() & (turn=='right')):
+                        print_msg("Autoreward (right turn)")
+                        self.maze.dose(pos)
+                    elif (self.reward_left_turns.IsChecked() & (turn=='left')):
+                        print_msg("Autoreward (left turn)")
+                        self.maze.dose(pos)
+
+                # Maintain T-maze
+                if self.maintain_t_maze.IsChecked():
+                    self.maze.rotate(PlusMaze.turn_compensation[turn])
+
+            except KeyError, e:
+                print_msg("Warning! Did the mouse jump over the T-block?")
+
+        self.prev_pos = pos
+        self.StatusBar.SetStatusText(self.prev_pos, 1)
+
 
     def actuate_gate(self, e):
         eo = e.EventObject
@@ -144,16 +181,20 @@ class PlusMazeController(wx.Frame):
             eo.SetBackgroundColour(wx.Colour(0,255,0))
         self.maze.actuate_gate(gate, closed)
 
+
     def dose(self, e):
         d = e.EventObject.GetLabel() # Direction, e.g. "west"
         self.maze.dose(d)
 
+
     def rotate(self, e):
         rot = e.EventObject.GetLabel()
         self.maze.rotate(rot)
-    
+
+
     def run_trials(self, e):
         pass
+
 
     def on_exit(self, e):
         print "on_exit"
