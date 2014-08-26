@@ -3,6 +3,7 @@ import wx
 
 from plusmaze import PlusMaze, DeviceError
 from runtrials import RunTrialsDialog
+from runegotrain import RunEgoTraining
 from util import *
 
 ID_EXPT_SEMIAUTO = wx.NewId()
@@ -84,6 +85,8 @@ class PlusMazeController(wx.Frame):
         expt_menu = wx.Menu()
 
         expt_menu.Append(ID_EXPT_EGOTRAIN, 'Continuous egocentric training', '')
+        self.Bind(wx.EVT_MENU, self.run_ego_training, id=ID_EXPT_EGOTRAIN)
+
         expt_menu.Append(ID_EXPT_SEMIAUTO, 'Semi-auto trials...', '')
         self.Bind(wx.EVT_MENU, self.run_semiauto_trials, id=ID_EXPT_SEMIAUTO)
 
@@ -209,6 +212,15 @@ class PlusMazeController(wx.Frame):
     def rotate(self, e):
         rot = e.EventObject.GetLabel()
         self.maze.rotate(rot)
+
+
+    def run_ego_training(self, e):
+        self.stop_default_polling()
+        runegotrain_dlg = RunEgoTraining(maze=self.maze,
+                                         block_pos=self.prev_pos,
+                                         parent=None, title='Run egocentric training')
+        runegotrain_dlg.ShowModal()
+        self.start_default_polling()
 
 
     def run_semiauto_trials(self, e):
