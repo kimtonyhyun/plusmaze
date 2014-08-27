@@ -150,6 +150,7 @@ class RunEgoTraining(wx.Dialog):
                     self.controls['start'].Disable()
                     self.controls['pause'].Disable()
                     self.controls['finish'].Enable()
+                    self.maze.actuate_gate(pos, True) # Close the gate
                     self._completed_training()
                 else:
                     self.trial_index += 1
