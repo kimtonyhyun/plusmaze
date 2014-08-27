@@ -217,9 +217,10 @@ class PlusMazeController(wx.Frame):
     def run_ego_training(self, e):
         self.stop_default_polling()
         runegotrain_dlg = RunEgoTraining(maze=self.maze,
-                                         block_pos=self.prev_pos,
+                                         prev_pos=self.prev_pos,
                                          parent=None, title='Run egocentric training')
         runegotrain_dlg.ShowModal()
+
         self.start_default_polling()
 
 
@@ -232,7 +233,7 @@ class PlusMazeController(wx.Frame):
             trial_file = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
             runtrials_dlg = RunTrialsDialog(trial_file=trial_file,
                                             maze=self.maze,
-                                            block_pos=self.prev_pos,
+                                            prev_pos=self.prev_pos,
                                             parent=None, title='Run trials ({})'.format(trial_file))
             runtrials_dlg.ShowModal()
             self.last_pos = runtrials_dlg.block_pos # Retrieve final position of block

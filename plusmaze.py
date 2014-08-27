@@ -123,6 +123,9 @@ class PlusMaze(object):
                                    PlusMaze.dose_settings[d].trig_bit)
         print_msg("Dosed {}".format(d))
 
+    def compensate_turn(self, turn):
+        self.rotate(PlusMaze.turn_compensation[turn])
+
     def rotate(self, r):
         self.xem.ActivateTriggerIn(PlusMaze.rotation_settings['TRIG_EPADDR'],
                                    PlusMaze.rotation_settings['trig_map'][r])

@@ -9,8 +9,11 @@ class RunEgoTraining(wx.Dialog):
     '''
     Run continuous egocentric training
     '''
-    def __init__(self, maze, block_pos, *args, **kw):
+    def __init__(self, maze, prev_pos, *args, **kw):
         super(RunEgoTraining, self).__init__(*args, **kw)
+
+        self.maze = maze
+        self.prev_pos = prev_pos
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -39,6 +42,8 @@ class RunEgoTraining(wx.Dialog):
 
         self.num_trials = 0 # Will be set later
         self.trial_index = 0
+        self.num_left  = 0
+        self.num_right = 0
 
         # Set up UI
         #------------------------------------------------------------
@@ -107,9 +112,55 @@ class RunEgoTraining(wx.Dialog):
         self.mon_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._monitor_training, self.mon_timer)
 
+    def _update_stats(self):
+        self.stats['trial_no'].SetLabel("{} ({:.0%})".format(
+            self.trial_index, self.trial_index / self.num_trials))
+        self.stats['left'].SetLabel("{} ({:.0%})".format(
+            self.num_left, self.num_left / self.trial_index))
+        self.stats['right'].SetLabel("{} ({:.0%})".format(
+            self.num_right, self.num_right / self.trial_index))
+        self.sizers['overall'].Layout()
 
     def _monitor_training(self, e):
-        print "Poll"
+        pos = self.maze.get_last_detected_pos()
+        if (self.prev_pos != pos):
+            print '* * * Trial {} of {} * * *'.format(self.trial_index, self.num_trials)
+            print_msg('Detected mouse at {}'.format(pos))
+
+            try:
+                turn = PlusMaze.pos_to_turn[(self.prev_pos, pos)]
+                print_msg('mouse executed {} turn'.format(turn))
+
+                if (turn == self.setup['turn'].GetValue()):
+                    print_msg("Reward for {} turn".format(turn))
+                    self.maze.dose(pos)
+
+                self.maze.compensate_turn(turn)
+
+                # Keep tally
+                if (turn == 'left'):
+                    self.num_left += 1
+                elif (turn == 'right'):
+                    self.num_right += 1
+
+                self._update_stats()
+
+                if (self.trial_index == self.num_trials):
+                    print_msg("Finished training sequence")
+                    self.controls['start'].Disable()
+                    self.controls['pause'].Disable()
+                    self.controls['finish'].Enable()
+                else:
+                    self.trial_index += 1
+
+                self.prev_pos = pos
+
+            except KeyError, e:
+                print_msg("Warning! Did the mouse jump over the T-block?")
+                print_msg("Pausing training!")
+                print_msg("Place the mouse back at {} before resuming training".format(
+                            self.prev_pos))
+                self._pause_training()
 
 
     def _training_control(self, e):
@@ -122,7 +173,7 @@ class RunEgoTraining(wx.Dialog):
         elif (ctrl == 'Pause'):
             self._pause_training()
         elif (ctrl == 'Finish'):
-            self._finish_trial()
+            self._finish_training()
 
 
     def _initialize_training(self):
