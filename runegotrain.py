@@ -1,9 +1,14 @@
 from __future__ import division
 
+import collections
+import os
+import time
 import wx
 
 from plusmaze import PlusMaze
 from util import *
+
+Trial = collections.namedtuple('Trial', 'start end turn time')
 
 class RunEgoTraining(wx.Dialog):
     '''
@@ -14,6 +19,7 @@ class RunEgoTraining(wx.Dialog):
 
         self.maze = maze
         self.prev_pos = prev_pos
+        self.maze.actuate_gate(self.prev_pos, True) # Close initial gate
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -33,15 +39,18 @@ class RunEgoTraining(wx.Dialog):
                       'left':  wx.StaticText(self, label=''),
                       'right': wx.StaticText(self, label='')}
 
-        self.controls = {'start':  wx.Button(self, label='Start'),
-                         'pause':  wx.Button(self, label='Pause'),
-                         'finish': wx.Button(self, label='Finish')}
-        self.controls['start'].Enable()
-        self.controls['pause'].Disable()
-        self.controls['finish'].Disable()
+        self.controls = {'start': wx.Button(self, label='Start'),
+                         'pause': wx.Button(self, label='Pause'),
+                         'save' : wx.Button(self, label='Save')}
+        self._enable_controls(True, False, False) # Start, Pause, Save
 
-        self.num_trials = 0 # Will be set later
+        # Will be initialized later
+        self.num_trials = 0
         self.trial_index = 0
+        self.trial_start_time = 0
+
+        # Running stats
+        self.trials = []
         self.num_left  = 0
         self.num_right = 0
 
@@ -98,7 +107,7 @@ class RunEgoTraining(wx.Dialog):
         control_sb.SetFont(bold_font)
         control_sbs = wx.StaticBoxSizer(control_sb, wx.HORIZONTAL)
 
-        for c in ['start', 'pause', 'finish']:
+        for c in ['start', 'pause', 'save']:
             c_btn = self.controls[c]
             c_btn.Bind(wx.EVT_BUTTON, self._training_control)
             control_sbs.Add(c_btn, 1, alignment, bval)
@@ -111,6 +120,23 @@ class RunEgoTraining(wx.Dialog):
         # Prepare maze monitor
         self.mon_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._monitor_training, self.mon_timer)
+
+    def _enable_controls(self, start, pause, save):
+        if start:
+            self.controls['start'].Enable()
+        else:
+            self.controls['start'].Disable()
+
+        if pause:
+            self.controls['pause'].Enable()
+        else:
+            self.controls['pause'].Disable()
+
+        if save:
+            self.controls['save'].Enable()
+        else:
+            self.controls['save'].Disable()
+
 
     def _update_stats(self):
         self.stats['trial_no'].SetLabel("{} ({:.0%})".format(
@@ -137,7 +163,15 @@ class RunEgoTraining(wx.Dialog):
 
                 self.maze.compensate_turn(turn)
 
+                current_time = time.time()
+                elapsed_time = current_time - self.trial_start_time # sec
+
                 # Keep tally
+                self.trials.append(Trial(start=self.prev_pos,
+                                         end=pos,
+                                         turn=turn,
+                                         time=elapsed_time,
+                                         ))
                 if (turn == 'left'):
                     self.num_left += 1
                 elif (turn == 'right'):
@@ -146,16 +180,13 @@ class RunEgoTraining(wx.Dialog):
                 self._update_stats()
 
                 if (self.trial_index == self.num_trials):
-                    print_msg("Finished training sequence")
-                    self.controls['start'].Disable()
-                    self.controls['pause'].Disable()
-                    self.controls['finish'].Enable()
-                    self.maze.actuate_gate(pos, True) # Close the gate
-                    self._completed_training()
+                    self._completed_training(pos)
                 else:
                     self.trial_index += 1
 
+                # Set up for next trial
                 self.prev_pos = pos
+                self.trial_start_time = current_time
 
             except KeyError, e:
                 print_msg("Warning! Did the mouse jump over the T-block?")
@@ -174,14 +205,12 @@ class RunEgoTraining(wx.Dialog):
                 self._resume_training()
         elif (ctrl == 'Pause'):
             self._pause_training()
-        elif (ctrl == 'Finish'):
-            self._finish_training()
+        elif (ctrl == 'Save'):
+            self._save_result()
 
 
     def _initialize_training(self):
-        self.controls['start'].Disable()
-        self.controls['pause'].Enable()
-        self.controls['finish'].Disable()
+        self._enable_controls(False, True, False)
 
         # Can't alter training params once started
         self.setup['turn'].Disable()
@@ -190,36 +219,42 @@ class RunEgoTraining(wx.Dialog):
 
         self.num_trials = int(self.setup['num_trials'].GetValue())
         self.trial_index = 1 # 1-index for the biologists
+        self.trial_start_time = time.time()
+
+        self.maze.actuate_gate(self.prev_pos, False) # Open gate
 
         self.mon_timer.Start(PlusMaze.POLL_PERIOD)
 
 
     def _resume_training(self):
-        self.controls['start'].Disable()
-        self.controls['pause'].Enable()
-        self.controls['finish'].Disable()
-
+        self._enable_controls(False, True, False)
         self.mon_timer.Start(PlusMaze.POLL_PERIOD)
 
 
     def _pause_training(self):
-        self.controls['start'].Enable()
-        self.controls['pause'].Disable()
-        self.controls['finish'].Disable()
-
+        self._enable_controls(True, False, False)
         self.mon_timer.Stop()
 
 
-    def _completed_training(self):
-        self.controls['start'].Disable()
-        self.controls['pause'].Disable()
-        self.controls['finish'].Enable()
-
+    def _completed_training(self, final_pos):
+        self._enable_controls(False, False, True)
         self.mon_timer.Stop()
 
+        self.maze.actuate_gate(final_pos, True) # Close the gate
 
-    def _finish_training(self):
-        pass
+        print_msg("Completed training!")
+
+
+    def _save_result(self):
+        dlg = wx.FileDialog(self, "Choose output file", '', '', '*.txt',
+                            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            output_file = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
+            print_msg("Writing results to {}...".format(output_file))
+            f = open(output_file, 'w')
+            for trial in self.trials:
+                f.write("{} {} {} {}\n".format(trial.start, trial.end, trial.turn, trial.time))
+            f.close()
 
 
     def OnClose(self, e):
