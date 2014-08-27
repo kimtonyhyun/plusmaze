@@ -150,6 +150,7 @@ class RunEgoTraining(wx.Dialog):
                     self.controls['start'].Disable()
                     self.controls['pause'].Disable()
                     self.controls['finish'].Enable()
+                    self._completed_training()
                 else:
                     self.trial_index += 1
 
@@ -204,6 +205,14 @@ class RunEgoTraining(wx.Dialog):
         self.controls['start'].Enable()
         self.controls['pause'].Disable()
         self.controls['finish'].Disable()
+
+        self.mon_timer.Stop()
+
+
+    def _completed_training(self):
+        self.controls['start'].Disable()
+        self.controls['pause'].Disable()
+        self.controls['finish'].Enable()
 
         self.mon_timer.Stop()
 
