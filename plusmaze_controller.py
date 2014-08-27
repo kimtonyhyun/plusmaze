@@ -242,7 +242,6 @@ class PlusMazeController(wx.Frame):
 
 
     def on_exit(self, e):
-        print "on_exit"
         self.Close()
 
 if (__name__ == '__main__'):
