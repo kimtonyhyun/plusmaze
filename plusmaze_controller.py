@@ -233,7 +233,7 @@ class PlusMazeController(wx.Frame):
             trial_file = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
             runtrials_dlg = RunTrialsDialog(trial_file=trial_file,
                                             maze=self.maze,
-                                            prev_pos=self.prev_pos,
+                                            block_pos=self.prev_pos,
                                             parent=None, title='Run trials ({})'.format(trial_file))
             runtrials_dlg.ShowModal()
             self.last_pos = runtrials_dlg.block_pos # Retrieve final position of block
