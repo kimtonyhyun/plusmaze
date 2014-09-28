@@ -49,6 +49,15 @@ class PlusMaze(object):
                                3: 'east'}
                     }
 
+
+    scope_settings = {'TRIG_EPADDR': 0x40,
+                      'trig_map': {'start': 7,
+                                   'stop': 8,
+                                  },
+                      'FRAME_LO_EPADDR': 0x21,
+                      'FRAME_HI_EPADDR': 0x22,
+                     }
+
     # CONTINUOUS T-MAZE OPERATION
     #   Description of how to rotate the center platform to accommodate the
     #   path of the mouse. The key ('east', 'north') corresponds to the mouse
@@ -105,6 +114,21 @@ class PlusMaze(object):
                                     PlusMaze.dose_settings[d].dose_vol)
         self.xem.SetWireInValue(PlusMaze.dose_settings['REPS_EPADDR'], dose_reps)
         self.xem.UpdateWireIns()
+
+    def start_recording(self):
+        self.xem.ActivateTriggerIn(PlusMaze.scope_settings['TRIG_EPADDR'],
+                                   PlusMaze.scope_settings['trig_map']['start'])
+        print_msg("Started miniscope recording")
+
+    def stop_recording(self):
+        self.xem.ActivateTriggerIn(PlusMaze.scope_settings['TRIG_EPADDR'],
+                                   PlusMaze.scope_settings['trig_map']['stop'])
+        print_msg("Stopped miniscope recording")
+
+    def get_frame_count(self):
+        self.xem.UpdateWireOuts()
+        frame_lo = self.xem.GetWireOutValue(PlusMaze.scope_settings['FRAME_LO_EPADDR'])
+        return frame_lo
 
     def get_last_detected_pos(self):
         self.xem.UpdateWireOuts()
