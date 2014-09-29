@@ -32,7 +32,7 @@ class PlusMaze(object):
                      'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=12000, dose_rep=2),
                      'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=2),
                      'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=12000, dose_rep=2),
-                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=12000, dose_rep=3)}
+                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=11500, dose_rep=3)}
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,

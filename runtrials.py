@@ -301,6 +301,8 @@ class RunTrialsDialog(wx.Dialog):
         else:
             # We are done. Select output file and record results
             self.maze.stop_recording() # Turn off the miniscope
+            print_msg("Miniscope recorded {} frames".format(
+                        self.maze.get_frame_count()))
 
             dlg = wx.FileDialog(self, "Choose output file", '', '', '*.txt',
                                 wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
@@ -321,6 +323,7 @@ class RunTrialsDialog(wx.Dialog):
 
     def OnClose(self, e):
         self.mon_timer.Stop()
+        self.maze.stop_recording()
         last_pos = self.maze.get_last_detected_pos()
         self._set_block_pos(last_pos)
         self.Destroy()
