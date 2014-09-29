@@ -200,7 +200,10 @@ class RunTrialsDialog(wx.Dialog):
         # Prepare for polling
         self.trial_start = trial.start
         self.trial_goal = trial.goal
-        
+
+        self.maze.start_recording() # Trigger the miniscope (may be redundant)
+
+
     def _set_block_pos(self, new_pos):
         if (self.block_pos == new_pos):
             return
@@ -228,7 +231,6 @@ class RunTrialsDialog(wx.Dialog):
         else:
             print_msg("Starting trial {}".format(self.trial_index+1)) # 1-index for biologists
 
-            self.maze.start_recording() # Trigger the miniscope (may be redundant)
             self.trial_start_time = time.time()
             self.trial_start_frame = self.maze.get_frame_count()
 
