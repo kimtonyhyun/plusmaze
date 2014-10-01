@@ -24,15 +24,15 @@ class PlusMaze(object):
     gate_settings = {'north': GateSetting(epaddr=0x02, cl=590, op=1200),
                      'south': GateSetting(epaddr=0x00, cl=550, op=1200),
                      'east' : GateSetting(epaddr=0x03, cl=570, op=1200),
-                     'west' : GateSetting(epaddr=0x01, cl=550, op=1200)}
+                     'west' : GateSetting(epaddr=0x01, cl=545, op=1200)}
 
     dose_settings = {'TRIG_EPADDR': 0x40,
                      'REPS_EPADDR': 0x08,
                      'all'  : DoseSetting(trig_bit=0, epaddr=None, dose_vol=None, dose_rep=None),
-                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=12000, dose_rep=2),
-                     'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=2),
-                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=12000, dose_rep=2),
-                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=11500, dose_rep=3)}
+                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=12000, dose_rep=4),
+                     'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=4),
+                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=12000, dose_rep=4),
+                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=11500, dose_rep=6)}
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,
