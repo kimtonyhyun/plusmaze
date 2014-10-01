@@ -326,6 +326,7 @@ class RunTrialsDialog(wx.Dialog):
     def OnClose(self, e):
         self.mon_timer.Stop()
         self.maze.stop_recording()
+        self._save_result("autobackup.txt")
         last_pos = self.maze.get_last_detected_pos()
         self._set_block_pos(last_pos)
         self.Destroy()
