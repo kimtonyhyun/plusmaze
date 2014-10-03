@@ -128,7 +128,8 @@ class PlusMaze(object):
     def get_frame_count(self):
         self.xem.UpdateWireOuts()
         frame_lo = self.xem.GetWireOutValue(PlusMaze.scope_settings['FRAME_LO_EPADDR'])
-        return frame_lo
+        frame_hi = self.xem.GetWireOutValue(PlusMaze.scope_settings['FRAME_HI_EPADDR'])
+        return ((frame_hi<<16) + frame_lo)
 
     def get_last_detected_pos(self):
         self.xem.UpdateWireOuts()
