@@ -31,7 +31,7 @@ class PlusMaze(object):
                      'all'  : DoseSetting(trig_bit=0, epaddr=None, dose_vol=None, dose_rep=None),
                      'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=15000, dose_rep=2),
                      'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=2),
-                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=14000, dose_rep=3),
+                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=14000, dose_rep=7),
                      'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=15000, dose_rep=3)}
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
