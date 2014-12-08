@@ -8,7 +8,7 @@ import wx
 from plusmaze import PlusMaze
 from util import *
 
-Trial = collections.namedtuple('Trial', 'start goal result time')
+Trial = collections.namedtuple('Trial', 'start goal result time start_frame end_frame')
 
 class RunTrialsDialog(wx.Dialog):
     '''
@@ -48,6 +48,8 @@ class RunTrialsDialog(wx.Dialog):
         self.trial_time = None
         self.trial_result = None
         self.trial_start_time = None
+        self.trial_start_frame = 0
+        self.trial_end_frame = 0
 
         self.num_correct = 0
 
@@ -160,7 +162,9 @@ class RunTrialsDialog(wx.Dialog):
             trials.append(Trial(start=ld[0].lower(),
                                 goal=ld[1].lower(),
                                 result=None,
-                                time=None))
+                                time=None,
+                                start_frame=None,
+                                end_frame=None))
 
         f.close()
         return trials
@@ -196,7 +200,10 @@ class RunTrialsDialog(wx.Dialog):
         # Prepare for polling
         self.trial_start = trial.start
         self.trial_goal = trial.goal
-        
+
+        self.maze.start_recording() # Trigger the miniscope (may be redundant)
+
+
     def _set_block_pos(self, new_pos):
         if (self.block_pos == new_pos):
             return
@@ -223,9 +230,12 @@ class RunTrialsDialog(wx.Dialog):
             print_msg("Error! Cannot start trial. Is the mouse in the start arm?")
         else:
             print_msg("Starting trial {}".format(self.trial_index+1)) # 1-index for biologists
-            self.maze.actuate_gate(self.trial_start, False) # Open the gate
+
             self.trial_start_time = time.time()
-            
+            self.trial_start_frame = self.maze.get_frame_count()
+
+            self.maze.actuate_gate(self.trial_start, False) # Open the gate
+
             self.controls['start'].Disable()
             self.controls['rewind'].Enable()
             self.controls['finish'].Disable()
@@ -237,12 +247,13 @@ class RunTrialsDialog(wx.Dialog):
         elapsed_time = time.time() - self.trial_start_time # sec
         m, s = divmod(elapsed_time, 60)
         self.trial_stats['time'].SetLabel("%02d:%02d" % (m, s))
-        
+
         mouse_pos = self.maze.get_last_detected_pos()
         if (mouse_pos != self.trial_start):
             print_msg("Mouse detected at {}".format(mouse_pos))
             self.maze.actuate_gate(mouse_pos, True) # Close the gate
             self.trial_stats['result'].SetLabel(mouse_pos)
+            self.trial_end_frame = self.maze.get_frame_count()
 
             if (mouse_pos == self.trial_goal):
                 self.maze.dose(mouse_pos)
@@ -272,7 +283,9 @@ class RunTrialsDialog(wx.Dialog):
         new_trial = Trial(start=self.trials[self.trial_index].start,
                           goal=self.trials[self.trial_index].goal,
                           result=self.trial_result,
-                          time=self.trial_time)
+                          time=self.trial_time,
+                          start_frame=self.trial_start_frame,
+                          end_frame=self.trial_end_frame)
         self.trials[self.trial_index] = new_trial
 
         # Update running stats        
@@ -289,6 +302,10 @@ class RunTrialsDialog(wx.Dialog):
             self._initialize_trial()
         else:
             # We are done. Select output file and record results
+            self.maze.stop_recording() # Turn off the miniscope
+            print_msg("Miniscope recorded {} frames".format(
+                        self.maze.get_frame_count()))
+
             dlg = wx.FileDialog(self, "Choose output file", '', '', '*.txt',
                                 wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
             if dlg.ShowModal() == wx.ID_OK:
@@ -300,12 +317,16 @@ class RunTrialsDialog(wx.Dialog):
         print_msg("Writing results to {}...".format(output_file))
         f = open(output_file, 'w')
         for trial in self.trials:
-            f.write("{} {} {} {}\n".format(trial.start, trial.goal, trial.result, trial.time))
+            f.write("{} {} {} {} {} {}\n".format(
+                trial.start, trial.goal, trial.result, trial.time,
+                trial.start_frame, trial.end_frame))
         f.close()
 
 
     def OnClose(self, e):
         self.mon_timer.Stop()
+        self.maze.stop_recording()
+        self._save_result("autobackup.txt")
         last_pos = self.maze.get_last_detected_pos()
         self._set_block_pos(last_pos)
         self.Destroy()
