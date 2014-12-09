@@ -58,6 +58,12 @@ class PlusMaze(object):
                       'FRAME_HI_EPADDR': 0x22,
                      }
 
+    lick_settings = {'TRIG_EPADDR': 0x41,
+                     'trig_map': {'reset': 0,
+                                 },
+                     'PIPE_EPADDR': 0xA0,
+                    }
+
     # CONTINUOUS T-MAZE OPERATION
     #   Description of how to rotate the center platform to accommodate the
     #   path of the mouse. The key ('east', 'north') corresponds to the mouse
@@ -155,3 +161,6 @@ class PlusMaze(object):
         self.xem.ActivateTriggerIn(PlusMaze.rotation_settings['TRIG_EPADDR'],
                                    PlusMaze.rotation_settings['trig_map'][r])
         print_msg("Rotating {}".format(r))
+
+    def pull_lick_buffer(self):
+        pass
