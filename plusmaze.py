@@ -1,5 +1,6 @@
 import collections
 import ok
+import time
 
 from util import *
 
@@ -59,9 +60,10 @@ class PlusMaze(object):
                      }
 
     lick_settings = {'TRIG_EPADDR': 0x41,
-                     'trig_map': {'reset': 0,
+                     'trig_map': {'reset_addr': 0,
                                  },
                      'PIPE_EPADDR': 0xA0,
+                     'BUFFER_LENGTH_IN_BYTES': 2*31250
                     }
 
     # CONTINUOUS T-MAZE OPERATION
@@ -163,4 +165,27 @@ class PlusMaze(object):
         print_msg("Rotating {}".format(r))
 
     def pull_lick_buffer(self):
-        pass
+        # First, reset the buffer read address counter
+        self.xem.ActivateTriggerIn(PlusMaze.lick_settings['TRIG_EPADDR'],
+                                   PlusMaze.lick_settings['trig_map']['reset_addr'])
+        time.sleep(0.1)
+
+        # Pull the buffer contents in binary. Note that contents are
+        # stored little-endian
+        bin_buf = bytearray(PlusMaze.lick_settings['BUFFER_LENGTH_IN_BYTES'])
+        code = self.xem.ReadFromPipeOut(PlusMaze.lick_settings['PIPE_EPADDR'], bin_buf)
+        if (code < 0):
+            print_msg("WARNING: pull_lick_buffer failed!")
+        else:
+            print_msg("Transferred {} bytes from FPGA lickometer buffer".format(code))
+
+        # Convert the binary buffer contents into list of bools, for readability
+        buffer_length_in_bits = 8*PlusMaze.lick_settings['BUFFER_LENGTH_IN_BYTES']
+        buf = [False,]*buffer_length_in_bits
+        for i in xrange(PlusMaze.lick_settings['BUFFER_LENGTH_IN_BYTES']):
+            bin_byte = bin_buf[i]
+            for j in xrange(8):
+                ind = 8*i + j
+                buf[ind] = ((1<<j) & bin_byte == (1<<j))
+
+        return buf

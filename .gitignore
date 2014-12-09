@@ -1,5 +1,6 @@
 *.swp
 autobackup.txt
+lickbuffer_dump.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

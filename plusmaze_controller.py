@@ -8,6 +8,7 @@ from util import *
 
 ID_EXPT_SEMIAUTO = wx.NewId()
 ID_EXPT_EGOTRAIN = wx.NewId()
+ID_DEV = wx.NewId()
 
 class PlusMazeController(wx.Frame):
     '''
@@ -95,9 +96,8 @@ class PlusMazeController(wx.Frame):
         # Dev options
         dev_menu = wx.Menu()
 
-        id_pipe = wx.ID_ANY
-        dev_menu.Append(id_pipe, 'Pull lickometer buffer', '')
-        self.Bind(wx.EVT_MENU, self.pull_lickometer_buffer, id=id_pipe)
+        dev_menu.Append(ID_DEV, 'Pull lickometer buffer', '')
+        self.Bind(wx.EVT_MENU, self.pull_lickometer_buffer, id=ID_DEV)
 
         menubar.Append(dev_menu, '&Dev')
 
@@ -252,7 +252,17 @@ class PlusMazeController(wx.Frame):
 
 
     def pull_lickometer_buffer(self, e):
-        print_msg("Pull lickometer buffer")
+        licks = self.maze.pull_lick_buffer() # List of bools
+
+        outname = "lickbuffer_dump.txt"
+        f = open(outname, 'w')
+        for lick in licks:
+            if (lick):
+                f.write("1\n")
+            else:
+                f.write("0\n")
+        f.close()
+        print_msg("Dumped lickometer buffer contents to {}".format(outname))
 
 
     def on_exit(self, e):
