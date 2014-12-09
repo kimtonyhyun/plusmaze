@@ -315,12 +315,28 @@ class RunTrialsDialog(wx.Dialog):
 
     def _save_result(self, output_file):
         print_msg("Writing results to {}...".format(output_file))
+
+        # Save trial results
         f = open(output_file, 'w')
         for trial in self.trials:
             f.write("{} {} {} {} {} {}\n".format(
                 trial.start, trial.goal, trial.result, trial.time,
                 trial.start_frame, trial.end_frame))
         f.close()
+
+        # Save lickometer data
+        num_recorded_frames = self.maze.get_frame_count()
+        licks = self.maze.pull_lick_buffer()
+
+        output_name, output_ext = os.path.splitext(output_file)
+        lick_file = output_name + '-lick' + output_ext
+        g = open(lick_file, 'w')
+        for i in xrange(num_recorded_frames):
+            if (licks[i]):
+                g.write("1\n")
+            else:
+                g.write("0\n")
+        g.close()
 
 
     def OnClose(self, e):

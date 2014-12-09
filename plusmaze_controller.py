@@ -8,6 +8,7 @@ from util import *
 
 ID_EXPT_SEMIAUTO = wx.NewId()
 ID_EXPT_EGOTRAIN = wx.NewId()
+ID_DEV = wx.NewId()
 
 class PlusMazeController(wx.Frame):
     '''
@@ -91,6 +92,14 @@ class PlusMazeController(wx.Frame):
         self.Bind(wx.EVT_MENU, self.run_semiauto_trials, id=ID_EXPT_SEMIAUTO)
 
         menubar.Append(expt_menu, '&Experiment')
+
+        # Dev options
+        dev_menu = wx.Menu()
+
+        dev_menu.Append(ID_DEV, 'Pull lickometer buffer', '')
+        self.Bind(wx.EVT_MENU, self.pull_lickometer_buffer, id=ID_DEV)
+
+        menubar.Append(dev_menu, '&Dev')
 
         self.SetMenuBar(menubar)
 
@@ -240,6 +249,23 @@ class PlusMazeController(wx.Frame):
             runtrials_dlg.Destroy()
 
         self.start_default_polling()
+
+
+    def pull_lickometer_buffer(self, e):
+        dlg = wx.FileDialog(self, "Choose output destination", '', '', '*.txt',
+                            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            licks = self.maze.pull_lick_buffer() # List of bools
+
+            output_file = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
+            f = open(output_file, 'w')
+            for lick in licks:
+                if (lick):
+                    f.write("1\n")
+                else:
+                    f.write("0\n")
+            f.close()
+            print_msg("Dumped lickometer buffer contents to {}".format(output_file))
 
 
     def on_exit(self, e):

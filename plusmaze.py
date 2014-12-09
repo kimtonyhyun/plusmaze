@@ -1,5 +1,6 @@
 import collections
 import ok
+import time
 
 from util import *
 
@@ -21,18 +22,18 @@ class PlusMaze(object):
 
     # HARDWARE SETTINGS
     #------------------------------------------------------------
-    gate_settings = {'north': GateSetting(epaddr=0x02, cl=590, op=1200),
-                     'south': GateSetting(epaddr=0x00, cl=550, op=1200),
+    gate_settings = {'north': GateSetting(epaddr=0x02, cl=555, op=1200),
+                     'south': GateSetting(epaddr=0x00, cl=580, op=1200),
                      'east' : GateSetting(epaddr=0x03, cl=570, op=1200),
-                     'west' : GateSetting(epaddr=0x01, cl=545, op=1200)}
+                     'west' : GateSetting(epaddr=0x01, cl=565, op=1200)}
 
     dose_settings = {'TRIG_EPADDR': 0x40,
                      'REPS_EPADDR': 0x08,
                      'all'  : DoseSetting(trig_bit=0, epaddr=None, dose_vol=None, dose_rep=None),
-                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=12000, dose_rep=4),
-                     'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=4),
-                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=12000, dose_rep=4),
-                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=11500, dose_rep=6)}
+                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=15000, dose_rep=2),
+                     'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=2),
+                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=14000, dose_rep=7),
+                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=15000, dose_rep=3)}
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,
@@ -57,6 +58,13 @@ class PlusMaze(object):
                       'FRAME_LO_EPADDR': 0x21,
                       'FRAME_HI_EPADDR': 0x22,
                      }
+
+    lick_settings = {'TRIG_EPADDR': 0x41,
+                     'trig_map': {'reset_addr': 0,
+                                 },
+                     'PIPE_EPADDR': 0xA0,
+                     'BUFFER_LENGTH_IN_BYTES': 2*31250
+                    }
 
     # CONTINUOUS T-MAZE OPERATION
     #   Description of how to rotate the center platform to accommodate the
@@ -155,3 +163,29 @@ class PlusMaze(object):
         self.xem.ActivateTriggerIn(PlusMaze.rotation_settings['TRIG_EPADDR'],
                                    PlusMaze.rotation_settings['trig_map'][r])
         print_msg("Rotating {}".format(r))
+
+    def pull_lick_buffer(self):
+        # First, reset the buffer read address counter
+        self.xem.ActivateTriggerIn(PlusMaze.lick_settings['TRIG_EPADDR'],
+                                   PlusMaze.lick_settings['trig_map']['reset_addr'])
+        time.sleep(0.1)
+
+        # Pull the buffer contents in binary. Note that contents are
+        # stored little-endian
+        bin_buf = bytearray(PlusMaze.lick_settings['BUFFER_LENGTH_IN_BYTES'])
+        code = self.xem.ReadFromPipeOut(PlusMaze.lick_settings['PIPE_EPADDR'], bin_buf)
+        if (code < 0):
+            print_msg("WARNING: pull_lick_buffer failed!")
+        else:
+            print_msg("Transferred {} bytes from FPGA lickometer buffer".format(code))
+
+        # Convert the binary buffer contents into list of bools, for readability
+        buffer_length_in_bits = 8*PlusMaze.lick_settings['BUFFER_LENGTH_IN_BYTES']
+        buf = [False,]*buffer_length_in_bits
+        for i in xrange(PlusMaze.lick_settings['BUFFER_LENGTH_IN_BYTES']):
+            bin_byte = bin_buf[i]
+            for j in xrange(8):
+                ind = 8*i + j
+                buf[ind] = ((1<<j) & bin_byte == (1<<j))
+
+        return buf
