@@ -92,6 +92,15 @@ class PlusMazeController(wx.Frame):
 
         menubar.Append(expt_menu, '&Experiment')
 
+        # Dev options
+        dev_menu = wx.Menu()
+
+        id_pipe = wx.ID_ANY
+        dev_menu.Append(id_pipe, 'Pull lickometer buffer', '')
+        self.Bind(wx.EVT_MENU, self.pull_lickometer_buffer, id=id_pipe)
+
+        menubar.Append(dev_menu, '&Dev')
+
         self.SetMenuBar(menubar)
 
 
@@ -240,6 +249,10 @@ class PlusMazeController(wx.Frame):
             runtrials_dlg.Destroy()
 
         self.start_default_polling()
+
+
+    def pull_lickometer_buffer(self, e):
+        print_msg("Pull lickometer buffer")
 
 
     def on_exit(self, e):
