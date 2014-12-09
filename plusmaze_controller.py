@@ -252,17 +252,20 @@ class PlusMazeController(wx.Frame):
 
 
     def pull_lickometer_buffer(self, e):
-        licks = self.maze.pull_lick_buffer() # List of bools
+        dlg = wx.FileDialog(self, "Choose output destination", '', '', '*.txt',
+                            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            licks = self.maze.pull_lick_buffer() # List of bools
 
-        outname = "lickbuffer_dump.txt"
-        f = open(outname, 'w')
-        for lick in licks:
-            if (lick):
-                f.write("1\n")
-            else:
-                f.write("0\n")
-        f.close()
-        print_msg("Dumped lickometer buffer contents to {}".format(outname))
+            output_file = os.path.join(dlg.GetDirectory(), dlg.GetFilename())
+            f = open(output_file, 'w')
+            for lick in licks:
+                if (lick):
+                    f.write("1\n")
+                else:
+                    f.write("0\n")
+            f.close()
+            print_msg("Dumped lickometer buffer contents to {}".format(output_file))
 
 
     def on_exit(self, e):
