@@ -44,6 +44,7 @@ class PlusMaze(object):
                         }
 
     prox_settings = {'LASTDETECT_EPADDR': 0x20,
+                     'LASTDETECT_MASK': 0b00000011,
                      'names': {0: 'west',
                                1: 'south',
                                2: 'north',
@@ -63,7 +64,9 @@ class PlusMaze(object):
                      'trig_map': {'reset_addr': 0,
                                  },
                      'PIPE_EPADDR': 0xA0,
-                     'BUFFER_LENGTH_IN_BYTES': 2*31250
+                     'BUFFER_LENGTH_IN_BYTES': 2*31250,
+                     'LICK_EPADDR': 0x20,
+                     'LICK_BIT': 2
                     }
 
     # CONTINUOUS T-MAZE OPERATION
@@ -142,8 +145,14 @@ class PlusMaze(object):
     def get_last_detected_pos(self):
         self.xem.UpdateWireOuts()
         last_detected_id = self.xem.GetWireOutValue(PlusMaze.prox_settings['LASTDETECT_EPADDR'])
+        last_detected_id = last_detected_id & PlusMaze.prox_settings['LASTDETECT_MASK']
         last_detected_name = PlusMaze.prox_settings['names'][last_detected_id]
         return last_detected_name
+
+    def get_lick_state(self):
+        self.xem.UpdateWireOuts()
+        status = self.xem.GetWireOutValue(PlusMaze.lick_settings['LICK_EPADDR'])
+        return check_bit(status, PlusMaze.lick_settings['LICK_BIT'])
 
     def actuate_gate(self, gate, closed):
         val = PlusMaze.gate_settings[gate].cl if closed else PlusMaze.gate_settings[gate].op

@@ -30,8 +30,8 @@ class PlusMazeController(wx.Frame):
         self._initialize_menu()
         self._initialize_buttons()
         self.CreateStatusBar()
-        self.StatusBar.SetFieldsCount(2)
-        self.StatusBar.SetStatusWidths([-3, -1]) # Relative widths 3:1
+        self.StatusBar.SetFieldsCount(3)
+        self.StatusBar.SetStatusWidths([-3, -1, -1]) # Relative widths 3:1:1
 
         # Sample initial location of mouse (may be garbage)
         self.prev_pos = self.maze.get_last_detected_pos()
@@ -171,6 +171,7 @@ class PlusMazeController(wx.Frame):
 
     def default_polling(self, e):
         pos = self.maze.get_last_detected_pos()
+
         if (self.prev_pos != pos):
             print "*"
             print_msg("Detected mouse at {}".format(pos))
@@ -198,8 +199,15 @@ class PlusMazeController(wx.Frame):
             except KeyError, e:
                 print_msg("Warning! Did the mouse jump over the T-block?")
 
+        # Set status
         self.prev_pos = pos
         self.StatusBar.SetStatusText(self.prev_pos, 1)
+
+        lick = self.maze.get_lick_state()
+        if lick:
+            self.StatusBar.SetStatusText('Lick!', 2)
+        else:
+            self.StatusBar.SetStatusText('', 2)
 
 
     def actuate_gate(self, e):
