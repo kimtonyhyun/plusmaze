@@ -8,7 +8,7 @@ import wx
 from plusmaze import PlusMaze
 from util import *
 
-Trial = collections.namedtuple('Trial', 'start goal result time start_frame end_frame')
+Trial = collections.namedtuple('Trial', 'start goal result time start_frame open_frame close_frame end_frame')
 
 class RunTrialsDialog(wx.Dialog):
     '''
@@ -53,7 +53,10 @@ class RunTrialsDialog(wx.Dialog):
         self.trial_time = None
         self.trial_result = None
         self.trial_start_time = None
+
         self.trial_start_frame = 0
+        self.trial_open_frame = 0
+        self.trial_close_frame = 0
         self.trial_end_frame = 0
 
         self.num_correct = 0
@@ -179,6 +182,8 @@ class RunTrialsDialog(wx.Dialog):
                                 result=None,
                                 time=None,
                                 start_frame=None,
+                                open_frame=None,
+                                close_frame=None,
                                 end_frame=None))
 
         f.close()
@@ -249,6 +254,7 @@ class RunTrialsDialog(wx.Dialog):
 
             self.trial_start_time = time.time()
             self.maze.start_recording() # Trigger miniscope
+            self.trial_start_frame = self.maze.get_frame_count()
 
             self.controls['start'].SetLabel('Open') # FIXME: Hackish
             self.controls['start'].Disable()
@@ -280,7 +286,7 @@ class RunTrialsDialog(wx.Dialog):
         self.controls['start'].Disable()
 
         # Open the gate and poll at a higher rate
-        self.trial_start_frame = self.maze.get_frame_count()
+        self.trial_open_frame = self.maze.get_frame_count()
         self.maze.actuate_gate(self.trial_start, False) # Open the gate
         self.mon_timer.Start(PlusMaze.POLL_PERIOD)
 
@@ -292,7 +298,7 @@ class RunTrialsDialog(wx.Dialog):
             print_msg("Mouse detected at {}".format(mouse_pos))
             self.maze.actuate_gate(mouse_pos, True) # Close the gate
             self.trial_stats['result'].SetLabel(mouse_pos)
-            self.trial_end_frame = self.maze.get_frame_count()
+            self.trial_close_frame = self.maze.get_frame_count()
 
             self.trial_result = mouse_pos
             if (mouse_pos == self.trial_goal):
@@ -314,6 +320,7 @@ class RunTrialsDialog(wx.Dialog):
 
         self.delayed_time += RunTrialsDialog.trial_timing['POLL_PERIOD']
         if (self.delayed_time >= RunTrialsDialog.trial_timing['FINISH']):
+            self.trial_end_frame = self.maze.get_frame_count()
             self.maze.stop_recording() # Turn off miniscope
 
             self.delayed_finish_timer.Stop()
@@ -323,6 +330,8 @@ class RunTrialsDialog(wx.Dialog):
 
 
     def _rewind_trial(self):
+        self.maze.stop_recording()
+
         # Stop all timers
         self.mon_timer.Stop()
         self.delayed_start_timer.Stop()
@@ -345,6 +354,8 @@ class RunTrialsDialog(wx.Dialog):
                           result=self.trial_result,
                           time=self.trial_time,
                           start_frame=self.trial_start_frame,
+                          open_frame=self.trial_open_frame,
+                          close_frame=self.trial_close_frame,
                           end_frame=self.trial_end_frame)
         self.trials[self.trial_index] = new_trial
 
@@ -378,9 +389,9 @@ class RunTrialsDialog(wx.Dialog):
         # Save trial results
         f = open(output_file, 'w')
         for trial in self.trials:
-            f.write("{} {} {} {} {} {}\n".format(
+            f.write("{} {} {} {:.3f} {} {} {} {}\n".format(
                 trial.start, trial.goal, trial.result, trial.time,
-                trial.start_frame, trial.end_frame))
+                trial.start_frame, trial.open_frame, trial.close_frame, trial.end_frame))
         f.close()
 
         # Save lickometer data

@@ -54,7 +54,8 @@ class PlusMaze(object):
 
     scope_settings = {'TRIG_EPADDR': 0x40,
                       'trig_map': {'start': 7,
-                                   'stop': 8,
+                                   'stop':  8,
+                                   'reset': 9,
                                   },
                       'FRAME_LO_EPADDR': 0x21,
                       'FRAME_HI_EPADDR': 0x22,
@@ -135,6 +136,13 @@ class PlusMaze(object):
         self.xem.ActivateTriggerIn(PlusMaze.scope_settings['TRIG_EPADDR'],
                                    PlusMaze.scope_settings['trig_map']['stop'])
         print_msg("Stopped miniscope recording")
+
+    def reset_scope_counter(self):
+        self.xem.ActivateTriggerIn(PlusMaze.scope_settings['TRIG_EPADDR'],
+                                   PlusMaze.scope_settings['trig_map']['reset'])
+        time.sleep(0.1)
+        frame_count = self.get_frame_count()
+        print_msg("Reset miniscope counter (new value: {})".format(frame_count))
 
     def get_frame_count(self):
         self.xem.UpdateWireOuts()
