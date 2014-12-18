@@ -163,6 +163,8 @@ class RunTrialsDialog(wx.Dialog):
         self.delayed_finish_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._delayed_finish, self.delayed_finish_timer)
 
+        # Reset the frame counter
+        self.maze.reset_scope_counter()
 
         # Initialize first trial
         self._initialize_trial()
@@ -320,8 +322,9 @@ class RunTrialsDialog(wx.Dialog):
 
         self.delayed_time += RunTrialsDialog.trial_timing['POLL_PERIOD']
         if (self.delayed_time >= RunTrialsDialog.trial_timing['FINISH']):
-            self.trial_end_frame = self.maze.get_frame_count()
             self.maze.stop_recording() # Turn off miniscope
+            time.sleep(0.1)
+            self.trial_end_frame = self.maze.get_frame_count()
 
             self.delayed_finish_timer.Stop()
             self.trial_time = elapsed_time
@@ -373,7 +376,8 @@ class RunTrialsDialog(wx.Dialog):
             self._initialize_trial()
         else:
             # We are done. Select output file and record results
-            print_msg("Miniscope recorded {} frames".format(
+            print "*"
+            print_msg("Miniscope recorded {} frames total".format(
                         self.maze.get_frame_count()))
 
             dlg = wx.FileDialog(self, "Choose output file", '', '', '*.txt',
