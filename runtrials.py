@@ -255,8 +255,9 @@ class RunTrialsDialog(wx.Dialog):
             print_msg("Starting trial {}".format(self.trial_index+1)) # 1-index just for display
 
             self.trial_start_time = time.time()
+
+            self.trial_start_frame = self.maze.get_frame_count()+1
             self.maze.start_recording() # Trigger miniscope
-            self.trial_start_frame = self.maze.get_frame_count()
 
             self.controls['start'].SetLabel('Open') # FIXME: Hackish
             self.controls['start'].Disable()
