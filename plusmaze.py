@@ -18,7 +18,7 @@ class PlusMaze(object):
     ordered_dirs = ['west', 'north', 'south', 'east']
 
     BITFILE = 'toplevel.bit'
-    POLL_PERIOD = 250 # ms
+    POLL_PERIOD = 100 # ms
 
     # HARDWARE SETTINGS
     #------------------------------------------------------------
@@ -30,10 +30,10 @@ class PlusMaze(object):
     dose_settings = {'TRIG_EPADDR': 0x40,
                      'REPS_EPADDR': 0x08,
                      'all'  : DoseSetting(trig_bit=0, epaddr=None, dose_vol=None, dose_rep=None),
-                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=15000, dose_rep=2),
+                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=15500, dose_rep=3),
                      'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=15000, dose_rep=2),
-                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=14000, dose_rep=7),
-                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=15000, dose_rep=3)}
+                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=15000, dose_rep=2),
+                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=15500, dose_rep=3)}
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,
@@ -44,6 +44,7 @@ class PlusMaze(object):
                         }
 
     prox_settings = {'LASTDETECT_EPADDR': 0x20,
+                     'LASTDETECT_MASK': 0b00000011,
                      'names': {0: 'west',
                                1: 'south',
                                2: 'north',
@@ -53,7 +54,8 @@ class PlusMaze(object):
 
     scope_settings = {'TRIG_EPADDR': 0x40,
                       'trig_map': {'start': 7,
-                                   'stop': 8,
+                                   'stop':  8,
+                                   'reset': 9,
                                   },
                       'FRAME_LO_EPADDR': 0x21,
                       'FRAME_HI_EPADDR': 0x22,
@@ -63,7 +65,9 @@ class PlusMaze(object):
                      'trig_map': {'reset_addr': 0,
                                  },
                      'PIPE_EPADDR': 0xA0,
-                     'BUFFER_LENGTH_IN_BYTES': 2*31250
+                     'BUFFER_LENGTH_IN_BYTES': 2*31250,
+                     'LICK_EPADDR': 0x20,
+                     'LICK_BIT': 2
                     }
 
     # CONTINUOUS T-MAZE OPERATION
@@ -133,6 +137,13 @@ class PlusMaze(object):
                                    PlusMaze.scope_settings['trig_map']['stop'])
         print_msg("Stopped miniscope recording")
 
+    def reset_scope_counter(self):
+        self.xem.ActivateTriggerIn(PlusMaze.scope_settings['TRIG_EPADDR'],
+                                   PlusMaze.scope_settings['trig_map']['reset'])
+        time.sleep(0.1)
+        frame_count = self.get_frame_count()
+        print_msg("Reset miniscope counter (new value: {})".format(frame_count))
+
     def get_frame_count(self):
         self.xem.UpdateWireOuts()
         frame_lo = self.xem.GetWireOutValue(PlusMaze.scope_settings['FRAME_LO_EPADDR'])
@@ -142,8 +153,14 @@ class PlusMaze(object):
     def get_last_detected_pos(self):
         self.xem.UpdateWireOuts()
         last_detected_id = self.xem.GetWireOutValue(PlusMaze.prox_settings['LASTDETECT_EPADDR'])
+        last_detected_id = last_detected_id & PlusMaze.prox_settings['LASTDETECT_MASK']
         last_detected_name = PlusMaze.prox_settings['names'][last_detected_id]
         return last_detected_name
+
+    def get_lick_state(self):
+        self.xem.UpdateWireOuts()
+        status = self.xem.GetWireOutValue(PlusMaze.lick_settings['LICK_EPADDR'])
+        return check_bit(status, PlusMaze.lick_settings['LICK_BIT'])
 
     def actuate_gate(self, gate, closed):
         val = PlusMaze.gate_settings[gate].cl if closed else PlusMaze.gate_settings[gate].op

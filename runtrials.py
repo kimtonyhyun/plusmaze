@@ -8,7 +8,7 @@ import wx
 from plusmaze import PlusMaze
 from util import *
 
-Trial = collections.namedtuple('Trial', 'start goal result time start_frame end_frame')
+Trial = collections.namedtuple('Trial', 'start goal result time start_frame open_frame close_frame end_frame')
 
 class RunTrialsDialog(wx.Dialog):
     '''
@@ -29,6 +29,11 @@ class RunTrialsDialog(wx.Dialog):
                       ('east',  'west' ): ('center cw', 2),
                       ('east',  'north'): ('center ccw', 1)}
 
+    trial_timing = {'POLL_PERIOD': 1000, # All timing in ms
+                    'START': 10000,
+                    'FINISH': 10000,
+                   }
+
     def __init__(self, trial_file, maze, block_pos, *args, **kw):
         super(RunTrialsDialog, self).__init__(*args, **kw)
 
@@ -48,7 +53,10 @@ class RunTrialsDialog(wx.Dialog):
         self.trial_time = None
         self.trial_result = None
         self.trial_start_time = None
+
         self.trial_start_frame = 0
+        self.trial_open_frame = 0
+        self.trial_close_frame = 0
         self.trial_end_frame = 0
 
         self.num_correct = 0
@@ -146,6 +154,18 @@ class RunTrialsDialog(wx.Dialog):
         self.mon_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._monitor_trial, self.mon_timer)
 
+        # Timers for delayed start and finish
+        self.delayed_time = 0
+
+        self.delayed_start_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._delayed_start, self.delayed_start_timer)
+
+        self.delayed_finish_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._delayed_finish, self.delayed_finish_timer)
+
+        # Reset the frame counter
+        self.maze.reset_scope_counter()
+
         # Initialize first trial
         self._initialize_trial()
 
@@ -164,10 +184,36 @@ class RunTrialsDialog(wx.Dialog):
                                 result=None,
                                 time=None,
                                 start_frame=None,
+                                open_frame=None,
+                                close_frame=None,
                                 end_frame=None))
 
         f.close()
         return trials
+
+
+    def _set_block_pos(self, new_pos):
+        if (self.block_pos == new_pos):
+            return
+        else:
+            block_map = RunTrialsDialog.block_mappings[(self.block_pos, new_pos)]
+            for i in xrange(block_map[1]):
+                self.maze.rotate(block_map[0])
+                self.sizers['trial'].Layout()
+                time.sleep(1.5)
+            self.block_pos = new_pos
+
+
+    def _trial_control(self, e):
+        ctrl = e.EventObject.GetLabel()
+        if (ctrl == 'Start'):
+            self._start_trial()
+        elif (ctrl == 'Open'):
+            self._open_trial()
+        elif (ctrl == 'Rewind'):
+            self._rewind_trial()
+        elif (ctrl == 'Finish'):
+            self._finish_trial()
 
 
     def _initialize_trial(self):
@@ -193,83 +239,110 @@ class RunTrialsDialog(wx.Dialog):
         self._set_block_pos(trial.start)
 
         # Set up controls
+        self.controls['start'].SetLabel('Start')
         self.controls['start'].Enable()
         self.controls['rewind'].Disable()
         self.controls['finish'].Disable()
 
-        # Prepare for polling
         self.trial_start = trial.start
         self.trial_goal = trial.goal
-
-        self.maze.start_recording() # Trigger the miniscope (may be redundant)
-
-
-    def _set_block_pos(self, new_pos):
-        if (self.block_pos == new_pos):
-            return
-        else:
-            block_map = RunTrialsDialog.block_mappings[(self.block_pos, new_pos)]
-            for i in xrange(block_map[1]):
-                self.maze.rotate(block_map[0])
-                time.sleep(1.5)
-            self.block_pos = new_pos
-
-
-    def _trial_control(self, e):
-        ctrl = e.EventObject.GetLabel()
-        if (ctrl == 'Start'):
-            self._start_trial()
-        elif (ctrl == 'Rewind'):
-            self._rewind_trial()
-        elif (ctrl == 'Finish'):
-            self._finish_trial()
 
 
     def _start_trial(self):
         if (self.maze.get_last_detected_pos() != self.trial_start):
             print_msg("Error! Cannot start trial. Is the mouse in the start arm?")
         else:
-            print_msg("Starting trial {}".format(self.trial_index+1)) # 1-index for biologists
+            print_msg("Starting trial {}".format(self.trial_index+1)) # 1-index just for display
 
             self.trial_start_time = time.time()
-            self.trial_start_frame = self.maze.get_frame_count()
 
-            self.maze.actuate_gate(self.trial_start, False) # Open the gate
+            self.trial_start_frame = self.maze.get_frame_count()+1
+            self.maze.start_recording() # Trigger miniscope
 
+            self.controls['start'].SetLabel('Open') # FIXME: Hackish
             self.controls['start'].Disable()
             self.controls['rewind'].Enable()
             self.controls['finish'].Disable()
 
-            self.mon_timer.Start(PlusMaze.POLL_PERIOD)
+            # Trigger delayed start
+            self.delayed_time = 0
+            self.delayed_start_timer.Start(RunTrialsDialog.trial_timing['POLL_PERIOD'])
+            print_msg("Holding at start for {} seconds".format(
+                RunTrialsDialog.trial_timing['START']/1000.0))
 
-    def _monitor_trial(self, e):
-        # Show elapsed time
+    def _update_elapsed_time(self):
         elapsed_time = time.time() - self.trial_start_time # sec
         m, s = divmod(elapsed_time, 60)
         self.trial_stats['time'].SetLabel("%02d:%02d" % (m, s))
+        self.sizers['trial'].Layout()
+        return elapsed_time
+
+    def _delayed_start(self, e):
+        self._update_elapsed_time()
+
+        self.delayed_time += RunTrialsDialog.trial_timing['POLL_PERIOD']
+        if (self.delayed_time >= RunTrialsDialog.trial_timing['FINISH']):
+            self.controls['start'].Enable()
+
+    def _open_trial(self):
+        self.delayed_start_timer.Stop()
+        self.controls['start'].Disable()
+
+        # Open the gate and poll at a higher rate
+        self.trial_open_frame = self.maze.get_frame_count()
+        self.maze.actuate_gate(self.trial_start, False) # Open the gate
+        self.mon_timer.Start(PlusMaze.POLL_PERIOD)
+
+    def _monitor_trial(self, e):
+        self._update_elapsed_time()
 
         mouse_pos = self.maze.get_last_detected_pos()
         if (mouse_pos != self.trial_start):
             print_msg("Mouse detected at {}".format(mouse_pos))
             self.maze.actuate_gate(mouse_pos, True) # Close the gate
             self.trial_stats['result'].SetLabel(mouse_pos)
-            self.trial_end_frame = self.maze.get_frame_count()
+            self.trial_close_frame = self.maze.get_frame_count()
 
+            self.trial_result = mouse_pos
             if (mouse_pos == self.trial_goal):
                 self.maze.dose(mouse_pos)
 
-            self.trial_result = mouse_pos
-            self.trial_time = elapsed_time
-            
             self.mon_timer.Stop()
-            self.controls['finish'].Enable()
+
+            # Trigger delayed finish
+            self.delayed_time = 0
+            self.delayed_finish_timer.Start(RunTrialsDialog.trial_timing['POLL_PERIOD'])
+            print_msg("Holding at finish for {} seconds".format(
+                RunTrialsDialog.trial_timing['FINISH']/1000.0))
 
         self.sizers['trial'].Layout()
 
 
+    def _delayed_finish(self, e):
+        elapsed_time = self._update_elapsed_time()
+
+        self.delayed_time += RunTrialsDialog.trial_timing['POLL_PERIOD']
+        if (self.delayed_time >= RunTrialsDialog.trial_timing['FINISH']):
+            self.maze.stop_recording() # Turn off miniscope
+            time.sleep(0.1)
+            self.trial_end_frame = self.maze.get_frame_count()
+
+            self.delayed_finish_timer.Stop()
+            self.trial_time = elapsed_time
+
+            self.controls['finish'].Enable()
+
+
     def _rewind_trial(self):
-        print_msg("Re-setup trial {}".format(self.trial_index+1))
+        self.maze.stop_recording()
+
+        # Stop all timers
         self.mon_timer.Stop()
+        self.delayed_start_timer.Stop()
+        self.delayed_finish_timer.Stop()
+
+        self.controls['start'].SetLabel('Start')
+        print_msg("Re-setup trial {}".format(self.trial_index+1))
         self._initialize_trial()
 
 
@@ -285,6 +358,8 @@ class RunTrialsDialog(wx.Dialog):
                           result=self.trial_result,
                           time=self.trial_time,
                           start_frame=self.trial_start_frame,
+                          open_frame=self.trial_open_frame,
+                          close_frame=self.trial_close_frame,
                           end_frame=self.trial_end_frame)
         self.trials[self.trial_index] = new_trial
 
@@ -302,8 +377,8 @@ class RunTrialsDialog(wx.Dialog):
             self._initialize_trial()
         else:
             # We are done. Select output file and record results
-            self.maze.stop_recording() # Turn off the miniscope
-            print_msg("Miniscope recorded {} frames".format(
+            print "*"
+            print_msg("Miniscope recorded {} frames total".format(
                         self.maze.get_frame_count()))
 
             dlg = wx.FileDialog(self, "Choose output file", '', '', '*.txt',
@@ -319,9 +394,9 @@ class RunTrialsDialog(wx.Dialog):
         # Save trial results
         f = open(output_file, 'w')
         for trial in self.trials:
-            f.write("{} {} {} {} {} {}\n".format(
+            f.write("{} {} {} {:.3f} {} {} {} {}\n".format(
                 trial.start, trial.goal, trial.result, trial.time,
-                trial.start_frame, trial.end_frame))
+                trial.start_frame, trial.open_frame, trial.close_frame, trial.end_frame))
         f.close()
 
         # Save lickometer data
@@ -340,9 +415,11 @@ class RunTrialsDialog(wx.Dialog):
 
 
     def OnClose(self, e):
+        # Stop all timers!
         self.mon_timer.Stop()
+        self.delayed_start_timer.Stop()
+        self.delayed_finish_timer.Stop()
+
         self.maze.stop_recording()
         self._save_result("autobackup.txt")
-        last_pos = self.maze.get_last_detected_pos()
-        self._set_block_pos(last_pos)
         self.Destroy()
