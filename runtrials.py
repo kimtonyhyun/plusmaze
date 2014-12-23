@@ -50,7 +50,7 @@ class RunTrialsDialog(wx.Dialog):
         self.trial_index = 0
         self.trial_start = None
         self.trial_goal = None
-        self.trial_time = None
+        self.trial_time = 0.0
         self.trial_result = None
         self.trial_start_time = None
 
