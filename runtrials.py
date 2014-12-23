@@ -182,7 +182,7 @@ class RunTrialsDialog(wx.Dialog):
             trials.append(Trial(start=ld[0].lower(),
                                 goal=ld[1].lower(),
                                 result=None,
-                                time=None,
+                                time=0.0,
                                 start_frame=None,
                                 open_frame=None,
                                 close_frame=None,
