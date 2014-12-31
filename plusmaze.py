@@ -25,7 +25,7 @@ class PlusMaze(object):
     gate_settings = {'north': GateSetting(epaddr=0x02, cl=555, op=1200),
                      'south': GateSetting(epaddr=0x00, cl=580, op=1200),
                      'east' : GateSetting(epaddr=0x03, cl=570, op=1200),
-                     'west' : GateSetting(epaddr=0x01, cl=565, op=1200)}
+                     'west' : GateSetting(epaddr=0x01, cl=560, op=1200)}
 
     dose_settings = {'TRIG_EPADDR': 0x40,
                      'REPS_EPADDR': 0x08,
