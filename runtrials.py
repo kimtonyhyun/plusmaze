@@ -281,7 +281,7 @@ class RunTrialsDialog(wx.Dialog):
         self._update_elapsed_time()
 
         self.delayed_time += RunTrialsDialog.trial_timing['POLL_PERIOD']
-        if (self.delayed_time >= RunTrialsDialog.trial_timing['FINISH']):
+        if (self.delayed_time >= RunTrialsDialog.trial_timing['START']):
             self.controls['start'].Enable()
 
     def _open_trial(self):
