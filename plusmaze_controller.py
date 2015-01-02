@@ -6,6 +6,7 @@ from runtrials import RunTrialsDialog
 from runegotrain import RunEgoTraining
 from util import *
 
+ID_MAZE_SETDOSEREP = wx.NewId()
 ID_EXPT_SEMIAUTO = wx.NewId()
 ID_EXPT_EGOTRAIN = wx.NewId()
 ID_DEV_QUERYCNT = wx.NewId()
@@ -80,6 +81,12 @@ class PlusMazeController(wx.Frame):
                                                      kind=wx.ITEM_RADIO)
         maze_menu.AppendMenu(wx.ID_ANY, '&Autoreward', reward_menu)
         maze_menu.AppendSeparator()
+
+        # Set up dosing
+        maze_menu.Append(ID_MAZE_SETDOSEREP, 'Set dosing profile', 'Set dosing profile')
+        self.Bind(wx.EVT_MENU, self.set_dose_reps, id=ID_MAZE_SETDOSEREP)
+        maze_menu.AppendSeparator()
+
         maze_menu.Append(wx.ID_EXIT, 'Exit', 'Exit the program')
         self.Bind(wx.EVT_MENU, self.on_exit, id=wx.ID_EXIT)
         menubar.Append(maze_menu, '&Maze')
@@ -235,6 +242,10 @@ class PlusMazeController(wx.Frame):
     def rotate(self, e):
         rot = e.EventObject.GetLabel()
         self.maze.rotate(rot)
+
+
+    def set_dose_reps(self, e):
+        print_msg("set_dose_reps")
 
 
     def run_ego_training(self, e):
