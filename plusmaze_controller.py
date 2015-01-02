@@ -8,6 +8,7 @@ from util import *
 
 ID_EXPT_SEMIAUTO = wx.NewId()
 ID_EXPT_EGOTRAIN = wx.NewId()
+ID_DEV_QUERYCNT = wx.NewId()
 ID_DEV_RESETCNT = wx.NewId()
 ID_DEV_PULLBUF = wx.NewId()
 
@@ -97,7 +98,9 @@ class PlusMazeController(wx.Frame):
         # Dev options
         dev_menu = wx.Menu()
 
-        dev_menu.Append(ID_DEV_RESETCNT, 'Reset miniscope interface counter', '')
+        dev_menu.Append(ID_DEV_QUERYCNT, 'Query miniscope counter', '')
+        self.Bind(wx.EVT_MENU, self.query_counter, id=ID_DEV_QUERYCNT)
+        dev_menu.Append(ID_DEV_RESETCNT, 'Reset miniscope counter', '')
         self.Bind(wx.EVT_MENU, self.reset_counter, id=ID_DEV_RESETCNT)
         dev_menu.Append(ID_DEV_PULLBUF, 'Pull lickometer buffer', '')
         self.Bind(wx.EVT_MENU, self.pull_lickometer_buffer, id=ID_DEV_PULLBUF)
@@ -260,6 +263,11 @@ class PlusMazeController(wx.Frame):
             runtrials_dlg.Destroy()
 
         self.start_default_polling()
+
+
+    def query_counter(self, e):
+        counter = self.maze.get_frame_count()
+        print_msg("Miniscope counter currently reads {}".format(counter))
 
 
     def reset_counter(self, e):
