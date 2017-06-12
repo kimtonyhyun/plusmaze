@@ -30,8 +30,8 @@ class RunTrialsDialog(wx.Dialog):
                       ('east',  'north'): ('center ccw', 1)}
 
     trial_timing = {'POLL_PERIOD': 1000, # All timing in ms
-                    'START': 10000,
-                    'FINISH': 10000,
+                    'START': 5000,
+                    'FINISH': 5000,
                    }
 
     def __init__(self, trial_file, maze, block_pos, *args, **kw):
@@ -298,10 +298,12 @@ class RunTrialsDialog(wx.Dialog):
 
         mouse_pos = self.maze.get_last_detected_pos()
         if (mouse_pos != self.trial_start):
-            print_msg("Mouse detected at {}".format(mouse_pos))
-            self.maze.actuate_gate(mouse_pos, True) # Close the gate
-            self.trial_stats['result'].SetLabel(mouse_pos)
             self.trial_close_frame = self.maze.get_frame_count()
+
+            print_msg("Mouse detected at {}".format(mouse_pos))
+            self.trial_stats['result'].SetLabel(mouse_pos)
+            
+            self.maze.actuate_gate(mouse_pos, True) # Close the gate
 
             self.trial_result = mouse_pos
             if (mouse_pos == self.trial_goal):
