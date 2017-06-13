@@ -8,7 +8,7 @@ import wx
 from plusmaze import PlusMaze
 from util import *
 
-Trial = collections.namedtuple('Trial', 'start goal result time start_frame open_frame close_frame end_frame')
+Trial = collections.namedtuple('Trial', 'start block goal result time start_frame open_frame close_frame end_frame')
 
 class RunTrialsDialog(wx.Dialog):
     '''
@@ -30,8 +30,8 @@ class RunTrialsDialog(wx.Dialog):
                       ('east',  'north'): ('center ccw', 1)}
 
     trial_timing = {'POLL_PERIOD': 1000, # All timing in ms
-                    'START': 10000,
-                    'FINISH': 10000,
+                    'START': 5000,
+                    'FINISH': 5000,
                    }
 
     def __init__(self, trial_file, maze, block_pos, *args, **kw):
@@ -179,8 +179,21 @@ class RunTrialsDialog(wx.Dialog):
         f = open(trial_file, 'r')
         for line in f:
             ld = line.split()
-            trials.append(Trial(start=ld[0].lower(),
-                                goal=ld[1].lower(),
+            
+            startblock = ld[0].lower()
+            goal = ld[1].lower()
+            
+            startblock = startblock.split('-')
+            if (len(startblock) == 1):
+                start = startblock[0]
+                block = startblock[0]
+            else:
+                start = startblock[0]
+                block = startblock[1]
+
+            trials.append(Trial(start=start,
+                                block=block,
+                                goal=goal,
                                 result=None,
                                 time=0.0,
                                 start_frame=None,
@@ -236,7 +249,7 @@ class RunTrialsDialog(wx.Dialog):
                 self.maze.actuate_gate(arm, True) # Close the gate
             else:
                 self.maze.actuate_gate(arm, False)
-        self._set_block_pos(trial.start)
+        self._set_block_pos(trial.block)
 
         # Set up controls
         self.controls['start'].SetLabel('Start')
@@ -298,10 +311,12 @@ class RunTrialsDialog(wx.Dialog):
 
         mouse_pos = self.maze.get_last_detected_pos()
         if (mouse_pos != self.trial_start):
-            print_msg("Mouse detected at {}".format(mouse_pos))
-            self.maze.actuate_gate(mouse_pos, True) # Close the gate
-            self.trial_stats['result'].SetLabel(mouse_pos)
             self.trial_close_frame = self.maze.get_frame_count()
+
+            print_msg("Mouse detected at {}".format(mouse_pos))
+            self.trial_stats['result'].SetLabel(mouse_pos)
+            
+            self.maze.actuate_gate(mouse_pos, True) # Close the gate
 
             self.trial_result = mouse_pos
             if (mouse_pos == self.trial_goal):
@@ -354,6 +369,7 @@ class RunTrialsDialog(wx.Dialog):
         # Record the result
         #   FIXME: May prefer a mutable representation of Trial
         new_trial = Trial(start=self.trials[self.trial_index].start,
+                          block=self.trials[self.trial_index].block,
                           goal=self.trials[self.trial_index].goal,
                           result=self.trial_result,
                           time=self.trial_time,
@@ -394,8 +410,15 @@ class RunTrialsDialog(wx.Dialog):
         # Save trial results
         f = open(output_file, 'w')
         for trial in self.trials:
+            start = trial.start
+            block = trial.block
+            if start == block:
+                startblock = start
+            else:
+                startblock = '{}-{}'.format(start, block)
+                
             f.write("{} {} {} {:.3f} {} {} {} {}\n".format(
-                trial.start, trial.goal, trial.result, trial.time,
+                startblock, trial.goal, trial.result, trial.time,
                 trial.start_frame, trial.open_frame, trial.close_frame, trial.end_frame))
         f.close()
 

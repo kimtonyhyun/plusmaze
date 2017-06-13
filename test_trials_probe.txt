@@ -1,0 +1,4 @@
+east north
+east-north north
+west south
+east south
