@@ -2,13 +2,14 @@ from __future__ import division
 
 import collections
 import os
+import random
 import time
 import wx
 
 from plusmaze import PlusMaze
 from util import *
 
-Trial = collections.namedtuple('Trial', 'start block goal result time start_frame open_frame close_frame end_frame')
+Trial = collections.namedtuple('Trial', 'start block goal result time reward_delay start_frame open_frame close_frame end_frame')
 
 class RunTrialsDialog(wx.Dialog):
     '''
@@ -51,6 +52,7 @@ class RunTrialsDialog(wx.Dialog):
         self.trial_start = None
         self.trial_goal = None
         self.trial_time = 0.0
+        self.reward_delay = 0.0
         self.trial_result = None
         self.trial_start_time = None
 
@@ -196,6 +198,7 @@ class RunTrialsDialog(wx.Dialog):
                                 goal=goal,
                                 result=None,
                                 time=0.0,
+                                reward_delay=0.0,
                                 start_frame=None,
                                 open_frame=None,
                                 close_frame=None,
@@ -319,8 +322,14 @@ class RunTrialsDialog(wx.Dialog):
             self.maze.actuate_gate(mouse_pos, True) # Close the gate
 
             self.trial_result = mouse_pos
-            if (mouse_pos == self.trial_goal):
+
+            # Reward conditions
+            if (self.trial_goal == 'any') or (mouse_pos == self.trial_goal):
+                delay = random.uniform(1.5, 2.5)
+                print_msg("Reward delayed by {:.3f}".format(delay))
+                time.sleep(delay)
                 self.maze.dose(mouse_pos)
+                self.reward_delay = delay
 
             self.mon_timer.Stop()
 
@@ -373,6 +382,7 @@ class RunTrialsDialog(wx.Dialog):
                           goal=self.trials[self.trial_index].goal,
                           result=self.trial_result,
                           time=self.trial_time,
+                          reward_delay=self.reward_delay,
                           start_frame=self.trial_start_frame,
                           open_frame=self.trial_open_frame,
                           close_frame=self.trial_close_frame,
@@ -417,8 +427,8 @@ class RunTrialsDialog(wx.Dialog):
             else:
                 startblock = '{}-{}'.format(start, block)
                 
-            f.write("{} {} {} {:.3f} {} {} {} {}\n".format(
-                startblock, trial.goal, trial.result, trial.time,
+            f.write("{} {} {} {:.3f} {:.3f} {} {} {} {}\n".format(
+                startblock, trial.goal, trial.result, trial.time, trial.reward_delay,
                 trial.start_frame, trial.open_frame, trial.close_frame, trial.end_frame))
         f.close()
 
