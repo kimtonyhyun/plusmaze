@@ -326,7 +326,7 @@ class RunTrialsDialog(wx.Dialog):
             # Reward conditions
             if (self.trial_goal == 'any') or (mouse_pos == self.trial_goal):
                 delay = random.uniform(1.5, 2.5)
-                print_msg("Reward delayed by {:.3f}".format(delay))
+                print_msg("Reward delayed by {:.3f} seconds".format(delay))
                 time.sleep(delay)
                 self.maze.dose(mouse_pos)
                 self.reward_delay = delay
