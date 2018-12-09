@@ -1,9 +1,11 @@
 import os
+import random
 import wx
 
 from plusmaze import PlusMaze, DeviceError
 from runtrials import RunTrialsDialog
 from runegotrain import RunEgoTraining
+from time import sleep
 from util import *
 
 ID_EXPT_SEMIAUTO = wx.NewId()
@@ -199,8 +201,23 @@ class PlusMazeController(wx.Frame):
                         self.maze.dose(pos)
 
                 # Maintain T-maze
+                '''
                 if self.maintain_t_maze.IsChecked():
                     self.maze.rotate(PlusMaze.turn_compensation[turn])
+                '''
+                dice = random.randint(0,1)
+                
+                if (turn == 'straight'):
+                    if dice:
+                        print_msg("Rotate block by 180 deg")
+                        self.maze.rotate('center ccw')
+                        sleep(1)
+                        self.maze.rotate('center ccw')
+                    else:
+                        print_msg("Block kept in same position")
+                else:
+                    self.maze.rotate('center ccw' if dice else 'center cw')
+                
 
             except KeyError, e:
                 print_msg("Warning! Did the mouse jump over the T-block?")
