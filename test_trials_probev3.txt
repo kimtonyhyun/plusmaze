@@ -1,4 +1,4 @@
-east-north none
-south-west any
-west-north south
+east-north any
+south-west north
+west-north north
 east-south south

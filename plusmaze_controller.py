@@ -1,5 +1,6 @@
 import os
 import random
+import time
 import wx
 
 from plusmaze import PlusMaze, DeviceError
@@ -51,9 +52,7 @@ class PlusMazeController(wx.Frame):
 
 
     def _initialize_menu(self):
-        menubar = wx.MenuBar()
-
-        # Maze options
+        menubar = wx.MenuBar()        # Maze options
         maze_menu = wx.Menu()
         self.maintain_t_maze = maze_menu.Append(wx.ID_ANY,
                                          'Maintain T-maze',
@@ -188,24 +187,14 @@ class PlusMazeController(wx.Frame):
                 turn = PlusMaze.pos_to_turn[(self.prev_pos, pos)]
                 print_msg("Mouse executed {} turn".format(turn))
 
-                # Autoreward
-                if self.reward_enable.IsChecked():
-                    if self.reward_every_arm.IsChecked():
-                        print_msg("Autoreward (every arm)")
-                        self.maze.dose(pos)
-                    elif (self.reward_right_turns.IsChecked() & (turn=='right')):
-                        print_msg("Autoreward (right turn)")
-                        self.maze.dose(pos)
-                    elif (self.reward_left_turns.IsChecked() & (turn=='left')):
-                        print_msg("Autoreward (left turn)")
-                        self.maze.dose(pos)
-
                 # Maintain T-maze
-                '''
+                
                 if self.maintain_t_maze.IsChecked():
                     self.maze.rotate(PlusMaze.turn_compensation[turn])
+                
                 '''
                 dice = random.randint(0,1)
+
                 
                 if (turn == 'straight'):
                     if dice:
@@ -217,7 +206,22 @@ class PlusMazeController(wx.Frame):
                         print_msg("Block kept in same position")
                 else:
                     self.maze.rotate('center ccw' if dice else 'center cw')
+                '''
                 
+                # Autoreward
+                #delay = random.uniform(1.5,2.5)
+                if self.reward_enable.IsChecked():
+                    if self.reward_every_arm.IsChecked():
+                        #time.sleep(delay)
+                        self.maze.dose(pos)
+                        #print_msg("Reward delayed by {} seconds".format(delay))
+                        print_msg("Autoreward (every arm)")
+                    elif (self.reward_right_turns.IsChecked() & (turn=='right')):
+                        print_msg("Autoreward (right turn)")
+                        self.maze.dose(pos)
+                    elif (self.reward_left_turns.IsChecked() & (turn=='left')):
+                        print_msg("Autoreward (left turn)")
+                        self.maze.dose(pos)
 
             except KeyError, e:
                 print_msg("Warning! Did the mouse jump over the T-block?")

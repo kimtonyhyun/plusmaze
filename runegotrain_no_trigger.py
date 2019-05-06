@@ -48,8 +48,6 @@ class RunEgoTraining(wx.Dialog):
         self.num_trials = 0
         self.trial_index = 0
         self.trial_start_time = 0
-        self.trial_start_frame = 0
-        elapsed_frames = 1
 
         # Running stats
         self.trials = []
@@ -166,25 +164,14 @@ class RunEgoTraining(wx.Dialog):
                 self.maze.compensate_turn(turn)
 
                 current_time = time.time()
-                current_frame = self.maze.get_frame_count()
                 elapsed_time = current_time - self.trial_start_time # sec
-                #elapsed_frames = current_frame - self.trial_start_frame # frames
-                elapsed_frames = self.maze.get_frame_count()
 
                 # Keep tally
-                #self.trials.append(Trial(start=self.prev_pos,
-                                         #end=pos,
-                                         #turn=turn,
-                                         #time=elapsed_time,
-                                         #))
-                    # Keep tally with time in frames
                 self.trials.append(Trial(start=self.prev_pos,
                                          end=pos,
                                          turn=turn,
-                                         time=elapsed_frames,
+                                         time=elapsed_time,
                                          ))
-
-                
                 if (turn == 'left'):
                     self.num_left += 1
                 elif (turn == 'right'):
@@ -200,7 +187,6 @@ class RunEgoTraining(wx.Dialog):
                 # Set up for next trial
                 self.prev_pos = pos
                 self.trial_start_time = current_time
-                self.trial_start_frame = current_frame + 1
 
             except KeyError, e:
                 print_msg("Warning! Did the mouse jump over the T-block?")
@@ -234,8 +220,6 @@ class RunEgoTraining(wx.Dialog):
         self.num_trials = int(self.setup['num_trials'].GetValue())
         self.trial_index = 1 # 1-index for the biologists
         self.trial_start_time = time.time()
-        self.trial_start_frame = 1 # first frame
-        self.maze.start_recording() # Trigger miniscope
 
         self.maze.actuate_gate(self.prev_pos, False) # Open gate
 
@@ -257,7 +241,6 @@ class RunEgoTraining(wx.Dialog):
         self.mon_timer.Stop()
 
         self.maze.actuate_gate(final_pos, True) # Close the gate
-        self.maze.stop_recording() # Turn off miniscope
 
         print_msg("Completed training!")
 
@@ -270,23 +253,9 @@ class RunEgoTraining(wx.Dialog):
             print_msg("Writing results to {}...".format(output_file))
             f = open(output_file, 'w')
             for trial in self.trials:
-                 f.write("{} {} {} {}\n".format(trial.start, trial.end, trial.turn, trial.time))
-                #f.write("{} {} {} {}\n".format(trial.start, trial.end, trial.turn, trial.frames))
+                f.write("{} {} {} {}\n".format(trial.start, trial.end, trial.turn, trial.time))
             f.close()
 
-        # Save lickometer data
-        num_recorded_frames = self.maze.get_frame_count()
-        licks = self.maze.pull_lick_buffer()
-
-        output_name, output_ext = os.path.splitext(output_file)
-        lick_file = output_name + '-lick' + output_ext
-        g = open(lick_file, 'w')
-        for i in xrange(num_recorded_frames):
-            if (licks[i]):
-                g.write("1\n")
-            else:
-                g.write("0\n")
-        g.close()
 
     def OnClose(self, e):
         self.mon_timer.Stop()

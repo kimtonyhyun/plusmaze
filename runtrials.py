@@ -9,7 +9,8 @@ import wx
 from plusmaze import PlusMaze
 from util import *
 
-Trial = collections.namedtuple('Trial', 'start block goal result time reward_delay start_frame open_frame close_frame end_frame')
+#Trial = collections.namedtuple('Trial', 'start block goal result time reward_delay start_frame open_frame close_frame end_frame')
+Trial = collections.namedtuple('Trial', 'start block goal result time start_frame open_frame close_frame end_frame')
 
 class RunTrialsDialog(wx.Dialog):
     '''
@@ -52,7 +53,6 @@ class RunTrialsDialog(wx.Dialog):
         self.trial_start = None
         self.trial_goal = None
         self.trial_time = 0.0
-        self.reward_delay = 0.0
         self.trial_result = None
         self.trial_start_time = None
 
@@ -198,7 +198,6 @@ class RunTrialsDialog(wx.Dialog):
                                 goal=goal,
                                 result=None,
                                 time=0.0,
-                                reward_delay=0.0,
                                 start_frame=None,
                                 open_frame=None,
                                 close_frame=None,
@@ -324,12 +323,48 @@ class RunTrialsDialog(wx.Dialog):
             self.trial_result = mouse_pos
 
             # Reward conditions
-            if (self.trial_goal == 'any') or (mouse_pos == self.trial_goal):
-                delay = random.uniform(1.5, 2.5)
+            #if (self.trial_goal == 'any'): #or (mouse_pos == self.trial_goal):
+               #delay = random.uniform(1.5, 2.5)
+                #print_msg("Reward delayed by {:.3f} seconds".format(delay))
+                #time.sleep(delay)
+                #self.maze.dose(mouse_pos)
+                #self.reward_delay = delay
+    
+            # fixed delayed reward
+            if (mouse_pos == self.trial_goal):
+                #dice = random.randint(1,100)
+                #if dice > 15:
+                    #delay = random.uniform(1.5, 2.5)
+                    #print_msg("Beat 85% odds. Reward delayed by {:.3f} seconds".format(delay))
+                delay = 0.0
                 print_msg("Reward delayed by {:.3f} seconds".format(delay))
                 time.sleep(delay)
                 self.maze.dose(mouse_pos)
-                self.reward_delay = delay
+                #self.reward_delay = delay
+                #else:
+                    #print_msg("Lost 85% odds. No reward given")
+                    #self.reward_delay = 0
+            elif (mouse_pos != self.trial_goal):
+                if (self.trial_goal == 'any'): #or (mouse_pos == self.trial_goal):
+                    #delay = random.uniform(1.5, 2.5)
+                    delay = 0.0
+                    print_msg("Always rewarded! Reward delayed by {:.3f} seconds".format(delay))
+                    time.sleep(delay)
+                    self.maze.dose(mouse_pos)
+                    #self.reward_delay = delay
+                else:
+                    #dice = random.randint(1,100)
+                    #if dice > 85:
+                        #delay = random.uniform(1.5, 2.5)
+                        #delay = 0.1;
+                        #print_msg("Beat 15% odds. Reward delayed by {:.3f} seconds".format(delay))
+                        #time.sleep(delay)
+                        #self.maze.dose(mouse_pos)
+                        #self.reward_delay = delay
+                    #else:
+                    #print_msg("Lost 15% odds. No reward given")
+                    print_msg("Incorrect arm chosen. No reward given")
+                    #self.reward_delay = 0
 
             self.mon_timer.Stop()
 
@@ -382,12 +417,13 @@ class RunTrialsDialog(wx.Dialog):
                           goal=self.trials[self.trial_index].goal,
                           result=self.trial_result,
                           time=self.trial_time,
-                          reward_delay=self.reward_delay,
                           start_frame=self.trial_start_frame,
                           open_frame=self.trial_open_frame,
                           close_frame=self.trial_close_frame,
                           end_frame=self.trial_end_frame)
         self.trials[self.trial_index] = new_trial
+
+        #reward_delay=self.reward_delay,
 
         # Update running stats        
         if (self.trial_result == self.trial_goal):
@@ -427,8 +463,11 @@ class RunTrialsDialog(wx.Dialog):
             else:
                 startblock = '{}-{}'.format(start, block)
                 
-            f.write("{} {} {} {:.3f} {:.3f} {} {} {} {}\n".format(
-                startblock, trial.goal, trial.result, trial.time, trial.reward_delay,
+            #f.write("{} {} {} {:.3f} {:.3f} {} {} {} {}\n".format(
+                #startblock, trial.goal, trial.result, trial.time, trial.reward_delay,
+                #trial.start_frame, trial.open_frame, trial.close_frame, trial.end_frame))
+            f.write("{} {} {} {:.3f} {} {} {} {}\n".format(
+                startblock, trial.goal, trial.result, trial.time,
                 trial.start_frame, trial.open_frame, trial.close_frame, trial.end_frame))
         f.close()
 

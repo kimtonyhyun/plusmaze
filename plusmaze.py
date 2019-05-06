@@ -17,23 +17,27 @@ class PlusMaze(object):
 
     ordered_dirs = ['west', 'north', 'south', 'east']
 
-    BITFILE = 'toplevel.bit'
+    BITFILE = 'toplevel_20190506b.bit'
     POLL_PERIOD = 100 # ms
 
     # HARDWARE SETTINGS
     #------------------------------------------------------------
     gate_settings = {'north': GateSetting(epaddr=0x02, cl=500, op=1100),
-                     'south': GateSetting(epaddr=0x00, cl=420, op=1100),
-                     'east' : GateSetting(epaddr=0x03, cl=575, op=1200),
-                     'west' : GateSetting(epaddr=0x01, cl=565, op=1200)}
+                     'south': GateSetting(epaddr=0x00, cl=480, op=1100),
+                     'east' : GateSetting(epaddr=0x03, cl=600, op=1300),
+                     'west' : GateSetting(epaddr=0x01, cl=605, op=1200)}
+
+    misc_settings = {'MISC_EPADDR': 0x09,
+                     'opto_shutter': 0
+                    }
 
     dose_settings = {'TRIG_EPADDR': 0x40,
                      'REPS_EPADDR': 0x08,
                      'all'  : DoseSetting(trig_bit=0, epaddr=None, dose_vol=None, dose_rep=None),
-                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=16000, dose_rep=4),
-                     'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=13000, dose_rep=4),
-                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=11500, dose_rep=4),
-                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=14500, dose_rep=4)}
+                     'east' : DoseSetting(trig_bit=4, epaddr=0x07, dose_vol=16000, dose_rep=12),
+                     'south': DoseSetting(trig_bit=1, epaddr=0x04, dose_vol=12200, dose_rep=12),
+                     'north': DoseSetting(trig_bit=3, epaddr=0x06, dose_vol=11000, dose_rep=13),
+                     'west' : DoseSetting(trig_bit=2, epaddr=0x05, dose_vol=14500, dose_rep=12)}
 
     rotation_settings = {'TRIG_EPADDR': 0x40,
                          'trig_map': {'center ccw': 5,
@@ -165,6 +169,15 @@ class PlusMaze(object):
         self.xem.UpdateWireOuts()
         status = self.xem.GetWireOutValue(PlusMaze.lick_settings['LICK_EPADDR'])
         return check_bit(status, PlusMaze.lick_settings['LICK_BIT'])
+
+    def set_opto(self, val):
+        '''
+        val=0 turns off opto; val=1 turns on opto
+        TODO: Proper bit masking
+        '''
+        self.xem.SetWireInValue(PlusMaze.misc_settings['MISC_EPADDR'], val)
+        self.xem.UpdateWireIns()
+        print_msg("opto set to {}".format(val))
 
     def actuate_gate(self, gate, closed):
         val = PlusMaze.gate_settings[gate].cl if closed else PlusMaze.gate_settings[gate].op
